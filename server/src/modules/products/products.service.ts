@@ -1,60 +1,60 @@
 import { ProductsRepository } from './products.repository.js';
 import { CreateProductCategoryDto, UpdateProductCategoryDto, CreateProductDto, UpdateProductDto } from './products.types.js';
 import { NotFoundError } from '../../core/errors/AppError.js';
-import { db } from '../../db/client.js';
-import { auditLogs } from '../../db/schema/dealflow.js';
+import { AuditService } from '../../core/audit/audit.service.js';
+import { AuditAction } from '../../core/audit/audit.types.js';
 
 export const ProductsService = {
   createCategory: async (data: CreateProductCategoryDto, actorId: string) => {
     const category = await ProductsRepository.createCategory(data);
-    return category; // Category auditing usually skipped or could be added
+    return category;
   },
 
-  listCategories: async () => {
-    return ProductsRepository.listCategories();
-  },
+  listCategories: async () => ProductsRepository.listCategories(),
 
   updateCategory: async (id: string, data: UpdateProductCategoryDto, actorId: string) => {
     const category = await ProductsRepository.updateCategory(id, data);
-    if (!category) {
-      throw new NotFoundError('Category not found');
-    }
+    if (!category) throw new NotFoundError('Category not found');
     return category;
   },
 
   createProduct: async (data: CreateProductDto, actorId: string) => {
     const product = await ProductsRepository.createProduct(data);
-    await db.insert(auditLogs).values({
+    await AuditService.log({
+      actorId,
       entityType: 'product',
       entityId: product.id,
-      actorId,
-      action: 'create',
+      action: AuditAction.PRODUCT_CREATED,
+      after: product,
     });
     return product;
   },
 
-  listProducts: async (activeOnly: boolean = false) => {
-    return ProductsRepository.listProducts(activeOnly);
-  },
+  listProducts: async (activeOnly: boolean = false) => ProductsRepository.listProducts(activeOnly),
 
   getProduct: async (id: string) => {
     const product = await ProductsRepository.getProductById(id);
-    if (!product) {
-      throw new NotFoundError('Product not found');
-    }
+    if (!product) throw new NotFoundError('Product not found');
     return product;
   },
 
   updateProduct: async (id: string, data: UpdateProductDto, actorId: string) => {
+    const existing = await ProductsRepository.getProductById(id);
     const product = await ProductsRepository.updateProduct(id, data);
-    if (!product) {
-      throw new NotFoundError('Product not found');
-    }
-    await db.insert(auditLogs).values({
+    if (!product) throw new NotFoundError('Product not found');
+
+    // If price changed, record as discount_changed for visibility
+    const action = (data.price !== undefined && existing?.price !== data.price)
+      ? AuditAction.PRODUCT_DISCOUNT_CHANGED
+      : AuditAction.PRODUCT_UPDATED;
+
+    await AuditService.log({
+      actorId,
       entityType: 'product',
       entityId: product.id,
-      actorId,
-      action: 'update',
+      action,
+      before: existing,
+      after: product,
     });
     return product;
   },

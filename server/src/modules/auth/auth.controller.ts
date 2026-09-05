@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service.js';
 import { signupSchema, loginSchema } from './auth.schemas.js';
+import { AuditService } from '../../core/audit/audit.service.js';
+import { AuditAction } from '../../core/audit/audit.types.js';
 
 export const AuthController = {
   signup: async (req: Request, res: Response, next: NextFunction) => {
@@ -17,13 +19,15 @@ export const AuthController = {
   login: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = loginSchema.parse(req).body;
-      const tokens = await AuthService.login(input);
+      const context = AuditService.fromRequest(req);
+      const tokens = await AuthService.login(input, context);
       AuthController.setCookies(res, tokens);
       res.status(200).json({ success: true, message: 'Logged in successfully' });
     } catch (error) {
       next(error);
     }
   },
+
 
   logout: async (req: Request, res: Response, next: NextFunction) => {
     try {

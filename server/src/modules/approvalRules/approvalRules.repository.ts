@@ -2,10 +2,12 @@ import { db } from '../../db/client.js';
 import { approvalRules } from '../../db/schema/dealflow.js';
 import { eq } from 'drizzle-orm';
 import { CreateApprovalRuleDto, UpdateApprovalRuleDto } from './approvalRules.types.js';
+import { ApprovalRoutingEngine } from '../approvals/approval.engine.js';
 
 export const ApprovalRulesRepository = {
   createRule: async (data: CreateApprovalRuleDto) => {
     const [rule] = await db.insert(approvalRules).values(data).returning();
+    await ApprovalRoutingEngine.invalidateCache();
     return rule;
   },
 
@@ -27,6 +29,7 @@ export const ApprovalRulesRepository = {
       .set(data)
       .where(eq(approvalRules.id, id))
       .returning();
+    await ApprovalRoutingEngine.invalidateCache();
     return rule;
   },
 };

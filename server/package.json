@@ -16,6 +16,7 @@
     "test": "JWT_SECRET=supersecret1234567890123456789012 DATABASE_URL=postgres://postgres:pass@localhost:5432/dealflow_db node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.4",
     "argon2": "^0.45.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -28,6 +29,7 @@
     "pg": "^8.16.0",
     "pino": "^9.7.0",
     "pino-http": "^10.4.0",
+    "rate-limit-redis": "^6.0.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

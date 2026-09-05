@@ -1,27 +1,27 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import express from 'express';
 import request from 'supertest';
-import { customersRoutes } from '../src/modules/customers/customers.routes.js';
-import { CustomersService } from '../src/modules/customers/customers.service.js';
 import { errorHandler } from '../src/core/middleware/errorHandler.js';
 
-jest.mock('../src/core/middleware/authenticate.js', () => ({
+jest.unstable_mockModule('../src/core/middleware/authenticate.js', () => ({
   authenticate: (req: any, res: any, next: any) => {
     req.user = { id: 'user-123', role: 'admin' };
     next();
   }
 }));
-jest.mock('../src/core/middleware/requireRole.js', () => ({
+
+jest.unstable_mockModule('../src/core/middleware/requireRole.js', () => ({
   requireRole: () => (req: any, res: any, next: any) => next()
 }));
 
-// Mocking CustomersService methods using spyOn
+const { customersRoutes } = await import('../src/modules/customers/customers.routes.js');
+const { CustomersService } = await import('../src/modules/customers/customers.service.js');
+
 jest.spyOn(CustomersService, 'createCompany');
 jest.spyOn(CustomersService, 'listCompanies');
 
 const app = express();
 app.use(express.json());
-
 app.use('/customers', customersRoutes);
 app.use(errorHandler);
 

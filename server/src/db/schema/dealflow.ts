@@ -10,19 +10,43 @@ import {
   index,
   check,
   text,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 export const userRoleEnum = pgEnum('user_role', ['admin', 'sales_manager', 'finance', 'sales_rep']);
 export const userStatusEnum = pgEnum('user_status', ['active', 'inactive', 'suspended']);
-export const quotationStatusEnum = pgEnum('quotation_status', ['open', 'negotiating', 'won', 'lost']);
+export const quotationStatusEnum = pgEnum('quotation_status', [
+  'draft', 
+  'pending_approval', 
+  'approved', 
+  'rejected', 
+  'revision_required', 
+  'fulfillment', 
+  'confirmed', 
+  'under_negotiation'
+]);
 export const approvalStatusEnum = pgEnum('approval_status', ['pending', 'approved', 'rejected']);
 export const backorderStatusEnum = pgEnum('backorder_status', ['pending', 'fulfilled', 'cancelled']);
 export const billingStatusEnum = pgEnum('billing_status', ['scheduled', 'invoiced', 'paid', 'failed']);
 export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'paid', 'overdue']);
 export const severityEnum = pgEnum('severity', ['low', 'medium', 'high', 'critical']);
-export const entityTypeEnum = pgEnum('entity_type', ['quotation', 'deal', 'product', 'company', 'contact']);
+export const healthAlertTypeEnum = pgEnum('health_alert_type', [
+  'STALLED',
+  'DISCOUNT_ANOMALY',
+  'DELIVERY_SLIPPAGE',
+  'APPROVAL_BOTTLENECK',
+  'EXCESSIVE_NEGOTIATION',
+]);
+export const entityTypeEnum = pgEnum('entity_type', [
+  'quotation', 'deal', 'product', 'company', 'contact',
+  'user', 'subscription', 'payment', 'order', 'warehouse',
+]);
+export const billingIntervalEnum = pgEnum('billing_interval', ['monthly', 'quarterly', 'yearly']);
+export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'canceled']);
+export const paymentTypeEnum = pgEnum('payment_type', ['charge', 'refund']);
+export const fulfillmentStatusEnum = pgEnum('fulfillment_status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled']);
 
 // ─── Core Tables ──────────────────────────────────────────────────────────────
 
@@ -82,6 +106,7 @@ export const companies = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: varchar('name', { length: 255 }).notNull(),
     domain: varchar('domain', { length: 255 }),
+    tierId: uuid('tier_id'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -118,6 +143,11 @@ export const contacts = pgTable(
 
 // ─── Products, Pricing & Inventory ─────────────────────────────────────────────
 
+export const customerTiers = pgTable('customer_tiers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 100 }).notNull(),
+});
+
 export const priceLists = pgTable('price_lists', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
@@ -150,7 +180,11 @@ export const products = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     categoryId: uuid('category_id').references(() => productCategories.id),
     active: boolean('active').default(true).notNull(),
+    promoted: boolean('promoted').default(false).notNull(),
+    isRecurring: boolean('is_recurring').default(false).notNull(),
+    billingInterval: billingIntervalEnum('billing_interval'),
     price: integer('price').notNull().default(0),
+    cost: integer('cost').notNull().default(0),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
@@ -163,7 +197,7 @@ export const discountPolicies = pgTable(
   'discount_policies',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    tierId: uuid('tier_id').notNull(),
+    tierId: uuid('tier_id').references(() => customerTiers.id).notNull(),
     categoryId: uuid('category_id').references(() => productCategories.id),
     discountPercent: integer('discount_percent').notNull(),
   },
@@ -186,17 +220,26 @@ export const upsells = pgTable(
   ]
 );
 
+export const warehouses = pgTable('warehouses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  location: varchar('location', { length: 255 }),
+  baseShippingCost: integer('base_shipping_cost').notNull().default(0),
+});
+
 export const inventory = pgTable(
   'inventory',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     productId: uuid('product_id').references(() => products.id).notNull(),
+    warehouseId: uuid('warehouse_id').references(() => warehouses.id).notNull(),
     availableQty: integer('available_qty').notNull().default(0),
-    warehouseId: uuid('warehouse_id'),
+    reservedQty: integer('reserved_qty').notNull().default(0),
   },
   (table) => [
     // 9. Warehouse split: product_id + available_qty DESC
     index('inventory_product_qty_desc_idx').on(table.productId, table.availableQty.desc()),
+    uniqueIndex('inventory_product_warehouse_uidx').on(table.productId, table.warehouseId),
   ]
 );
 
@@ -208,9 +251,14 @@ export const quotations = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     title: varchar('title', { length: 255 }).notNull(),
     amount: integer('amount').notNull().default(0),
-    status: quotationStatusEnum('status').default('open').notNull(),
+    status: quotationStatusEnum('status').default('draft').notNull(),
     customerId: uuid('customer_id').references(() => companies.id),
     ownerId: uuid('owner_id').references(() => users.id),
+    subtotal: integer('subtotal').notNull().default(0),
+    tax: integer('tax').notNull().default(0),
+    discount: integer('discount').notNull().default(0),
+    margin: integer('margin').notNull().default(0),
+    riskScore: integer('risk_score').notNull().default(0),
     lastActivityAt: timestamp('last_activity_at').defaultNow(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
@@ -231,10 +279,46 @@ export const quotations = pgTable(
     // 18. Stalled deal scan: open quotation + last_activity_at (Partial index for open/negotiating states)
     index('quotations_stalled_scan_idx')
       .on(table.lastActivityAt)
-      .where(sql`${table.status} IN ('open', 'negotiating')`),
+      .where(sql`${table.status} IN ('draft', 'under_negotiation')`),
       
     // 20. Reporting: created_at + owner_id + status
     index('quotations_reporting_idx').on(table.createdAt, table.ownerId, table.status),
+  ]
+);
+
+export const quotationLines = pgTable(
+  'quotation_lines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    quotationId: uuid('quotation_id').references(() => quotations.id, { onDelete: 'cascade' }).notNull(),
+    productId: uuid('product_id').references(() => products.id).notNull(),
+    productNameSnapshot: varchar('product_name_snapshot', { length: 255 }).notNull(),
+    unitPrice: integer('unit_price').notNull(),
+    quantity: integer('quantity').notNull().default(1),
+    taxRate: integer('tax_rate').notNull().default(0),
+    discount: integer('discount').notNull().default(0),
+    subtotal: integer('subtotal').notNull(),
+    total: integer('total').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('quotation_lines_quotation_idx').on(table.quotationId),
+  ]
+);
+
+export const quotationAllocations = pgTable(
+  'quotation_allocations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    quotationId: uuid('quotation_id').references(() => quotations.id, { onDelete: 'cascade' }).notNull(),
+    productId: uuid('product_id').references(() => products.id).notNull(),
+    warehouseId: uuid('warehouse_id').references(() => warehouses.id).notNull(),
+    quantity: integer('quantity').notNull().default(0),
+    isOverride: boolean('is_override').notNull().default(false),
+  },
+  (table) => [
+    index('quotation_allocations_quotation_idx').on(table.quotationId),
+    uniqueIndex('quotation_allocations_q_p_w_uidx').on(table.quotationId, table.productId, table.warehouseId),
   ]
 );
 
@@ -301,6 +385,8 @@ export const fulfillments = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     quotationId: uuid('quotation_id').references(() => quotations.id).notNull(),
+    status: fulfillmentStatusEnum('status').default('pending').notNull(),
+    estimatedDelivery: timestamp('estimated_delivery'),
     shippedAt: timestamp('shipped_at'),
   },
   (table) => [
@@ -328,9 +414,11 @@ export const billingSchedules = pgTable(
   'billing_schedules',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    quotationId: uuid('quotation_id').references(() => quotations.id).notNull(),
+    orderId: uuid('order_id').references(() => orders.id).notNull(),
     billingDate: timestamp('billing_date').notNull(),
     status: billingStatusEnum('status').default('scheduled').notNull(),
+    amount: integer('amount').notNull().default(0),
+    isRecurring: boolean('is_recurring').notNull().default(false),
   },
   (table) => [
     // 12. Billing worker: status = SCHEDULED + billing_date <= current date
@@ -338,6 +426,39 @@ export const billingSchedules = pgTable(
     index('billing_worker_idx')
       .on(table.billingDate)
       .where(sql`${table.status} = 'scheduled'`),
+  ]
+);
+
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orderId: uuid('order_id').references(() => orders.id).notNull(),
+    productId: uuid('product_id').references(() => products.id).notNull(),
+    status: subscriptionStatusEnum('status').default('active').notNull(),
+    interval: billingIntervalEnum('interval').notNull(),
+    currentPeriodStart: timestamp('current_period_start').notNull(),
+    currentPeriodEnd: timestamp('current_period_end').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('subscriptions_order_idx').on(table.orderId),
+    index('subscriptions_status_idx').on(table.status),
+  ]
+);
+
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orderId: uuid('order_id').references(() => orders.id).notNull(),
+    amount: integer('amount').notNull(),
+    type: paymentTypeEnum('type').notNull(),
+    idempotencyKey: varchar('idempotency_key', { length: 255 }).notNull().unique(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('payments_order_idx').on(table.orderId),
   ]
 );
 
@@ -376,8 +497,12 @@ export const dealHealthAlerts = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     quotationId: uuid('quotation_id').references(() => quotations.id).notNull(),
-    unresolved: boolean('unresolved').default(true).notNull(),
+    type: healthAlertTypeEnum('type').notNull(),
     severity: severityEnum('severity').notNull(),
+    score: integer('score').notNull().default(0),
+    reason: text('reason').notNull(),
+    unresolved: boolean('unresolved').default(true).notNull(),
+    resolvedAt: timestamp('resolved_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
@@ -401,6 +526,11 @@ export const auditLogs = pgTable(
     entityId: uuid('entity_id').notNull(),
     actorId: uuid('actor_id').references(() => users.id).notNull(),
     action: varchar('action', { length: 100 }).notNull(),
+    reason: text('reason'),
+    beforeJson: jsonb('before_json'),
+    afterJson: jsonb('after_json'),
+    ipAddress: varchar('ip_address', { length: 45 }),
+    userAgent: varchar('user_agent', { length: 512 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [

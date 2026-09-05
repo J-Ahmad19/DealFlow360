@@ -1,0 +1,2 @@
+DROP INDEX "quotations_stalled_scan_idx";--> statement-breakpoint
+CREATE INDEX "quotations_stalled_scan_idx" ON "quotations" USING btree ("last_activity_at") WHERE "quotations"."status" IN ('draft', 'under_negotiation');

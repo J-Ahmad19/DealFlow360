@@ -1,0 +1,76 @@
+import { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
+import { PortalService } from './portal.service.js';
+import { CustomerContext } from '../../core/authz/policies/customer.policy.js';
+
+// We inject these for now, in a real DI setup they'd be injected properly.
+import { DiscountEngine } from '../discounts/discount.engine.js';
+import { ApprovalRoutingEngine } from '../approvals/approval.engine.js';
+import { DiscountPolicyRepository } from '../discounts/discount.repository.js';
+
+const discountRepo = new DiscountPolicyRepository();
+const discountEngine = new DiscountEngine(discountRepo);
+const approvalEngine = new ApprovalRoutingEngine();
+const portalService = new PortalService(discountEngine, approvalEngine);
+
+// Mock extraction of customer context from request (usually set by middleware)
+function getCustomerContext(req: Request): CustomerContext {
+  // In a real app: return req.user as CustomerContext
+  // For the sake of this endpoint, we simulate it via headers or standard auth
+  const companyId = req.headers['x-company-id'] as string;
+  const contactId = req.headers['x-contact-id'] as string;
+  return { companyId, contactId };
+}
+
+export async function getQuotation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const ctx = getCustomerContext(req);
+    const data = await portalService.getPortalQuotation(ctx, id);
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function addMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const ctx = getCustomerContext(req);
+    const { message } = z.object({ message: z.string().min(1) }).parse(req.body);
+    
+    const thread = await portalService.addMessage(ctx, id, message);
+    res.json({ data: thread });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function counterOffer(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const ctx = getCustomerContext(req);
+    const { modifications } = z.object({
+      modifications: z.array(z.object({
+        lineId: z.string().uuid(),
+        discount: z.number().min(0).max(100)
+      }))
+    }).parse(req.body);
+
+    const result = await portalService.counterOffer(ctx, id, modifications);
+    res.json({ data: result, message: 'Counter-offer submitted and evaluated' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function confirmQuotation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const ctx = getCustomerContext(req);
+    const result = await portalService.confirm(ctx, id);
+    res.json({ data: result, message: 'Quotation confirmed' });
+  } catch (err) {
+    next(err);
+  }
+}

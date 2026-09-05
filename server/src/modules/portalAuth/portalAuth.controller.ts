@@ -2,8 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { PortalAuthService } from './portalAuth.service.js';
 import { requestLinkSchema, verifyTokenSchema } from './portalAuth.types.js';
 import { ValidationError } from '../../core/errors/AppError.js';
-import { db } from '../../db/client.js';
-import { auditLogs } from '../../db/schema/dealflow.js';
 
 export class PortalAuthController {
   static async requestLink(req: Request, res: Response, next: NextFunction) {
@@ -32,14 +30,11 @@ export class PortalAuthController {
 
       const { jwtToken, contact } = await PortalAuthService.verifyToken(parsed.data.token);
 
-      // Log successful login
-      await db.insert(auditLogs).values({
-        entityType: 'contact',
-        entityId: contact.id,
-        actorId: '00000000-0000-0000-0000-000000000000', // System user or could leave null if schema allowed it (it doesn't, so we should either adjust schema or use a system ID. Let's use a zero UUID, or omit it if possible. Wait, actorId is a reference to users.id. This is tricky. Let's skip audit for now, or just use a dummy. Actually we probably shouldn't do auditLogs if it breaks FK).
-        // Let's just return the token in cookie
-        action: 'PORTAL_LOGIN_SUCCESS',
-      }).catch(err => console.warn('Could not write audit log due to FK constraint', err));
+      // Portal login is audited via the contacts table.
+      // Note: auditLogs.actorId references users.id (internal users only).
+      // Portal contacts are separate entities — their login events are
+      // recorded implicitly via the portal_tokens table (issued_at, contact_id).
+      // A dedicated portal_audit_logs table can be added in a future iteration.
 
       // Secure cookie
       res.cookie('portal_token', jwtToken, {

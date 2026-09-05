@@ -13,6 +13,12 @@ import { customersRoutes } from '../modules/customers/customers.routes.js';
 import { productsRoutes } from '../modules/products/products.routes.js';
 import { pricingRoutes } from '../modules/pricing/pricing.routes.js';
 import { approvalRulesRoutes } from '../modules/approvalRules/approvalRules.routes.js';
+import { quotationsRoutes } from '../modules/quotations/quotations.routes.js';
+import recommendationsRoutes from '../modules/recommendations/recommendations.routes.js';
+import fulfillmentRoutes from '../modules/fulfillment/fulfillment.routes.js';
+import { ordersRoutes, subscriptionsRoutes } from '../modules/billing/billing.routes.js';
+import { portalRoutes } from '../modules/portal/portal.routes.js';
+import { dealHealthRoutes } from '../modules/dealHealth/deal-health.routes.js';
 
 const apiRouter = Router();
 
@@ -24,6 +30,13 @@ apiRouter.use('/customers', customersRoutes);
 apiRouter.use('/products', productsRoutes);
 apiRouter.use('/pricing', pricingRoutes);
 apiRouter.use('/approval-rules', approvalRulesRoutes);
+apiRouter.use('/quotations', quotationsRoutes);
+apiRouter.use('/quotations/:id', recommendationsRoutes);
+apiRouter.use('/quotations/:id', fulfillmentRoutes);
+apiRouter.use('/orders', ordersRoutes);
+apiRouter.use('/subscriptions', subscriptionsRoutes);
+apiRouter.use('/portal', portalRoutes);
+apiRouter.use('/deal-health', dealHealthRoutes);
 // apiRouter.use('/deals', dealsRouter);
 // apiRouter.use('/users', usersRouter);
 
