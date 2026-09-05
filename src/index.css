@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #fff8f0;
+  --color-brand-100: #fff0db;
+  --color-brand-200: #ffdcb3;
+  --color-brand-300: #ffc480;
+  --color-brand-400: #ffa533;
+  --color-brand-500: #ff8c00;
+  --color-brand-600: #e67e00;
+  --color-brand-700: #cc6e00;
+  --color-brand-800: #a35800;
+  --color-brand-900: #7a4200;
+
+  --color-warm-50: #fffcf5;
+  --color-warm-100: #fff7e6;
+  --color-warm-200: #ffedcc;
+  --color-warm-300: #ffe0a3;
+  --color-warm-400: #ffd066;
+  --color-warm-500: #ffc233;
+  --color-warm-600: #e6a800;
+  --color-warm-700: #b38300;
+
+  --color-slate-950: #0a0e1a;
+  --color-slate-900: #111827;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-600: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-400: #94a3b8;
+  --color-slate-300: #cbd5e1;
+  --color-slate-200: #e2e8f0;
+  --color-slate-100: #f1f5f9;
+  --color-slate-50: #f8fafc;
+
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #fafbfc;
+  color: var(--color-slate-800);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-900);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-slate-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-slate-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-400);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.clay {
+  background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  box-shadow:
+    8px 8px 16px rgba(0, 0, 0, 0.06),
+    -8px -8px 16px rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.clay-accent {
+  background: linear-gradient(145deg, #fff8f0, #fff0db);
+  box-shadow:
+    8px 8px 16px rgba(255, 140, 0, 0.08),
+    -8px -8px 16px rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 200, 130, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-gradient {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 140, 0, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 50%, rgba(255, 200, 130, 0.08), transparent),
+    linear-gradient(180deg, #fafbfc 0%, #fff8f0 50%, #fafbfc 100%);
+}
+
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-slate-200), transparent);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 140, 0, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(255, 140, 0, 0.3); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out infinite 2s;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
