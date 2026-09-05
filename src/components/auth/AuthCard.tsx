@@ -43,6 +43,7 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [companyName, setCompanyName] = useState('sales-hq');
   const [customCompany, setCustomCompany] = useState('');
+  const [signupRole, setSignupRole] = useState('sales_rep');
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   // Status & Modals
@@ -116,20 +117,23 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           });
-          loginUser(res.user);
+          if (res.user) {
+            loginUser(res.user);
+          }
           navigate('/app/dashboard');
         } else {
-          const targetCompany = companyName === 'custom' ? customCompany : companyName;
           const res = await apiFetch('/auth/signup', {
             method: 'POST',
             body: JSON.stringify({
               email,
               fullName,
               password,
-              team: targetCompany,
+              role: signupRole,
             }),
           });
-          loginUser(res.user);
+          if (res.user) {
+            loginUser(res.user);
+          }
           navigate('/app/dashboard');
         }
       }
@@ -438,8 +442,43 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
               )}
             </div>
           )}
-
-          {/* Terms Checkbox (Only on Sign Up) */}
+          {/* Role Selector — only sales_rep on public signup; admins created by system */}
+          {mode === 'signup' && accountType === 'internal' && (
+            <div>
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                Your Role
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { value: 'sales_rep', label: 'Sales Representative', desc: 'Create quotes, manage deals' },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setSignupRole(r.value)}
+                    className={`flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left transition-all ${
+                      signupRole === r.value
+                        ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20'
+                        : 'border-slate-100 bg-slate-50 hover:border-slate-200'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      signupRole === r.value ? 'border-brand-500 bg-brand-500' : 'border-slate-300'
+                    }`}>
+                      {signupRole === r.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-900">{r.label}</p>
+                      <p className="text-xs font-medium text-slate-500">{r.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-400 font-medium">
+                💡 Manager, Finance &amp; Admin roles are assigned by your organization admin after signup.
+              </p>
+            </div>
+          )}
           {mode === 'signup' && (
             <div className="flex items-center gap-3 pt-2">
               <input
