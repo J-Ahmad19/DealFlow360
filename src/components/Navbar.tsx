@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ShieldCheck, Building } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -14,7 +13,6 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, customer } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -59,49 +57,29 @@ export default function Navbar() {
 
         {/* Desktop Action Buttons: [Get Started] [Sign In] [View My Quote] */}
         <div className="hidden md:flex items-center gap-2">
-          {user ? (
-            <Link
-              to="/app/dashboard"
-              className="btn-tactile btn-primary px-5 py-2.5 text-sm flex items-center gap-2"
-            >
-              <ShieldCheck size={16} />
-              Internal Workspace
-            </Link>
-          ) : customer ? (
-            <Link
-              to="/portal/dashboard"
-              className="btn-tactile btn-secondary px-5 py-2.5 text-sm flex items-center gap-2"
-            >
-              <Building size={16} />
-              Quotation Portal
-            </Link>
-          ) : (
-            <>
-              {/* Sign In -> internal login */}
-              <Link
-                to="/auth/login"
-                className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                Sign In
-              </Link>
+          {/* Sign In -> internal login */}
+          <Link
+            to="/auth/login"
+            className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+          >
+            Sign In
+          </Link>
 
-              {/* View My Quote -> customer portal login */}
-              <Link
-                to="/portal/login"
-                className="px-4 py-2 text-sm font-bold text-secondary-600 hover:text-secondary-700 hover:bg-secondary-50 rounded-xl transition-all border border-secondary-200"
-              >
-                View My Quote
-              </Link>
+          {/* View My Quote -> customer portal login */}
+          <Link
+            to="/portal/login"
+            className="px-4 py-2 text-sm font-bold text-secondary-600 hover:text-secondary-700 hover:bg-secondary-50 rounded-xl transition-all border border-secondary-200"
+          >
+            View My Quote
+          </Link>
 
-              {/* Get Started -> internal signup */}
-              <Link
-                to="/auth/signup"
-                className="btn-tactile btn-primary px-5 py-2.5 text-sm rounded-xl ml-1"
-              >
-                Get Started
-              </Link>
-            </>
-          )}
+          {/* Get Started -> internal signup */}
+          <Link
+            to="/auth/signup"
+            className="btn-tactile btn-primary px-5 py-2.5 text-sm rounded-xl ml-1"
+          >
+            Get Started
+          </Link>
         </div>
 
         {/* Mobile Toggle */}
