@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, type UserRole } from '../../contexts/AuthContext';
-import { LogOut, ChevronDown, ShieldCheck, UserCheck } from 'lucide-react';
+import { LogOut, ChevronDown, ShieldCheck } from 'lucide-react';
 
 const roleBadges: Record<UserRole, { label: string; style: string }> = {
   admin: { label: 'Administrator', style: 'bg-red-500/10 text-red-700 border-red-200' },
@@ -10,15 +10,10 @@ const roleBadges: Record<UserRole, { label: string; style: string }> = {
   sales_rep: { label: 'Sales Rep', style: 'bg-brand-500/10 text-brand-700 border-brand-200' },
 };
 
-const rolesList: { role: UserRole; name: string }[] = [
-  { role: 'sales_rep', name: 'Sales Representative' },
-  { role: 'sales_manager', name: 'Sales Manager' },
-  { role: 'finance', name: 'Finance & Governance' },
-  { role: 'admin', name: 'System Administrator' },
-];
+
 
 export default function UserMenu() {
-  const { user, logoutUser, switchRole } = useAuth();
+  const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -81,32 +76,6 @@ export default function UserMenu() {
             </div>
           </div>
 
-          {/* Interactive Role Switcher for Demo / Testing */}
-          <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <UserCheck size={12} />
-              Simulate Role View
-            </p>
-            <div className="space-y-1">
-              {rolesList.map((item) => (
-                <button
-                  key={item.role}
-                  onClick={() => {
-                    switchRole(item.role);
-                    setOpen(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-between transition-colors ${
-                    user.role === item.role
-                      ? 'bg-brand-500 text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-200/70'
-                  }`}
-                >
-                  <span>{item.name}</span>
-                  {user.role === item.role && <span className="text-[10px] uppercase font-black tracking-widest bg-white/20 px-1.5 py-0.5 rounded">Active</span>}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Actions */}
           <div className="pt-1 px-2">
