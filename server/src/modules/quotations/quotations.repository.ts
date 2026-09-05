@@ -1,6 +1,6 @@
+import { eq, desc } from 'drizzle-orm';
 import { db } from '../../db/client.js';
-import { quotations, quotationLines } from '../../db/schema/dealflow.js';
-import { eq } from 'drizzle-orm';
+import { quotations, quotationLines, companies, users } from '../../db/schema/dealflow.js';
 
 export const QuotationsRepository = {
   create: async (quotationData: any, linesData: any[]) => {
@@ -23,17 +23,25 @@ export const QuotationsRepository = {
   },
 
   getById: async (id: string) => {
-    const q = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
-    });
+    const q = await db
+      .select({
+        quotation: quotations,
+        customerName: companies.name,
+        ownerName: users.fullName,
+      })
+      .from(quotations)
+      .leftJoin(companies, eq(quotations.customerId, companies.id))
+      .leftJoin(users, eq(quotations.ownerId, users.id))
+      .where(eq(quotations.id, id))
+      .limit(1);
 
-    if (!q) return null;
+    if (!q || q.length === 0) return null;
 
     const lines = await db.query.quotationLines.findMany({
       where: eq(quotationLines.quotationId, id),
     });
 
-    return { ...q, lines };
+    return { ...q[0].quotation, customerName: q[0].customerName, ownerName: q[0].ownerName, lines };
   },
 
   update: async (id: string, quotationData: any, linesData?: any[]) => {
@@ -75,8 +83,21 @@ export const QuotationsRepository = {
   },
 
   getAll: async () => {
-    return db.query.quotations.findMany({
-      orderBy: (q, { desc }) => [desc(q.createdAt)],
-    });
+    const data = await db
+      .select({
+        quotation: quotations,
+        customerName: companies.name,
+        ownerName: users.fullName,
+      })
+      .from(quotations)
+      .leftJoin(companies, eq(quotations.customerId, companies.id))
+      .leftJoin(users, eq(quotations.ownerId, users.id))
+      .orderBy(desc(quotations.createdAt));
+
+    return data.map((row) => ({
+      ...row.quotation,
+      customerName: row.customerName,
+      ownerName: row.ownerName,
+    }));
   },
 };

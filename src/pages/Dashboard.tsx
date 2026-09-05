@@ -1,11 +1,26 @@
+import { useState, useEffect } from 'react';
 import { PermissionGuard } from '../components/auth/PermissionGuard';
 import { Link } from 'react-router-dom';
-import {
-  CheckSquare,
-  Plus
-} from 'lucide-react';
+import { CheckSquare, Plus, Loader2 } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 export default function Dashboard() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const data = await apiFetch('/dashboard/stats');
+        setStats(data);
+      } catch (err) {
+        console.error('Failed to load dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
   return (
     <div className="space-y-8 max-w-5xl">
       {/* Welcome Banner */}
@@ -19,27 +34,33 @@ export default function Dashboard() {
       </div>
 
       {/* Summary Cards Grid (Matching Wireframe Box 2) */}
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="animate-spin text-slate-400" size={32} />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         {/* Card 1: Pending Approvals */}
         <PermissionGuard role={['admin', 'sales_manager', 'finance']}>
           <div className="rounded-3xl p-6 bg-slate-900 text-white shadow-sm relative overflow-hidden h-32 flex flex-col justify-between">
             <h3 className="font-display font-black text-sm text-slate-100">Pending Approvals</h3>
-            <p className="text-xs font-bold text-slate-400">4 quotations waiting</p>
+            <p className="text-xs font-bold text-slate-400">{stats?.pendingApprovals || 0} quotations waiting</p>
           </div>
         </PermissionGuard>
 
         {/* Card 2: Open Quotations */}
         <div className="rounded-3xl p-6 bg-slate-900 text-white shadow-sm relative overflow-hidden h-32 flex flex-col justify-between">
           <h3 className="font-display font-black text-sm text-slate-100">Open Quotations</h3>
-          <p className="text-xs font-bold text-slate-400">12 active deals</p>
+          <p className="text-xs font-bold text-slate-400">{stats?.openQuotations || 0} active deals</p>
         </div>
 
         {/* Card 3: At-Risk Deals */}
         <div className="rounded-3xl p-6 bg-slate-900 text-white shadow-sm relative overflow-hidden h-32 flex flex-col justify-between">
           <h3 className="font-display font-black text-sm text-slate-100">At-Risk Deals</h3>
-          <p className="text-xs font-bold text-slate-400">3 flagged by Deal Health</p>
+          <p className="text-xs font-bold text-slate-400">{stats?.atRiskDeals || 0} flagged by Deal Health</p>
         </div>
       </div>
+      )}
 
       {/* Quick Actions (Below Cards) */}
       <div className="flex items-center gap-4 shrink-0">
@@ -71,15 +92,15 @@ export default function Dashboard() {
         </h2>
 
         <div className="space-y-3">
-          {[
-            '- Acme Corp quotation approved by Finance',
-            '- Beta Industries requested a discount change',
-            '- East Depot stock updated for Order #2291',
-          ].map((title, idx) => (
-            <p key={idx} className="text-sm font-bold text-slate-800 leading-snug">
-              {title}
-            </p>
-          ))}
+          {loading ? (
+            <p className="text-sm font-bold text-slate-400 leading-snug">Loading...</p>
+          ) : (
+            stats?.recentActivity?.map((title: string, idx: number) => (
+              <p key={idx} className="text-sm font-bold text-slate-800 leading-snug">
+                {title}
+              </p>
+            ))
+          )}
         </div>
       </div>
     </div>

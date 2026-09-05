@@ -1,12 +1,43 @@
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Save, Send } from 'lucide-react';
+import { Save, Send, Loader2 } from 'lucide-react';
+import { apiFetch } from '../../lib/api';
 
 export default function QuotationDetail() {
   const { id } = useParams();
-  
-  // Dummy data based on wireframe
-  const quoteId = id || 'Q-1042';
-  const customerName = 'Acme Corp';
+  const [quotation, setQuotation] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadQuotation() {
+      try {
+        const data = await apiFetch(`/quotations/${id}`);
+        setQuotation(data);
+      } catch (err) {
+        console.error('Failed to load quotation details:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (id) {
+      loadQuotation();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="animate-spin text-slate-400" size={32} />
+      </div>
+    );
+  }
+
+  if (!quotation) {
+    return <div className="text-red-500 font-bold">Quotation not found</div>;
+  }
+
+  const quoteId = quotation.id.split('-')[0].substring(0, 8); // Just show a part for display
+  const customerName = quotation.customerName || 'Unknown Customer';
 
   return (
     <div className="space-y-8 max-w-5xl">
@@ -55,30 +86,22 @@ export default function QuotationDetail() {
             </tr>
           </thead>
           <tbody className="text-slate-200 divide-y divide-slate-800">
-            <tr>
-              <td className="px-4 py-4">Laptop Pro 14</td>
-              <td className="px-4 py-4">2</td>
-              <td className="px-4 py-4">$1,200</td>
-              <td className="px-4 py-4">15%</td>
-              <td className="px-4 py-4 text-slate-400">15%</td>
-              <td className="px-4 py-4 text-emerald-400 font-black">OK</td>
-            </tr>
-            <tr>
-              <td className="px-4 py-4">Onsite Setup Service</td>
-              <td className="px-4 py-4">1</td>
-              <td className="px-4 py-4">$480</td>
-              <td className="px-4 py-4 text-amber-400">18%</td>
-              <td className="px-4 py-4 text-slate-400">10%</td>
-              <td className="px-4 py-4 text-red-400 font-black">OVER (+8pt)</td>
-            </tr>
-            <tr>
-              <td className="px-4 py-4">Extended Warranty</td>
-              <td className="px-4 py-4">1</td>
-              <td className="px-4 py-4">$150</td>
-              <td className="px-4 py-4">10%</td>
-              <td className="px-4 py-4 text-slate-400">15%</td>
-              <td className="px-4 py-4 text-emerald-400 font-black">OK</td>
-            </tr>
+            {quotation.lines?.map((line: any) => {
+              const limit = 15; // Hardcoded limit for visual demonstration; in real app this would come from product/tier rules
+              const isOver = line.discount > limit;
+              return (
+                <tr key={line.id || line.productId}>
+                  <td className="px-4 py-4">{line.productNameSnapshot}</td>
+                  <td className="px-4 py-4">{line.quantity}</td>
+                  <td className="px-4 py-4">${line.unitPrice}</td>
+                  <td className={`px-4 py-4 ${isOver ? 'text-amber-400' : ''}`}>{line.discount}%</td>
+                  <td className="px-4 py-4 text-slate-400">{limit}%</td>
+                  <td className={`px-4 py-4 font-black ${isOver ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {isOver ? `OVER (+${line.discount - limit}pt)` : 'OK'}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

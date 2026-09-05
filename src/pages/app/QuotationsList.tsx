@@ -1,17 +1,37 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, List } from 'lucide-react';
-
-const DUMMY_QUOTATIONS = [
-  { id: 'Q-1042', customer: 'Acme Corp', amount: '$12,400', status: 'Draft' },
-  { id: 'Q-1043', customer: 'Delta LLC', amount: '$3,200', status: 'Draft' },
-  { id: 'Q-1044', customer: 'Beta Industries', amount: '$29,500', status: 'Pending Approval' },
-  { id: 'Q-1045', customer: 'Gamma Co', amount: '$15,500', status: 'Under Negotiation' },
-  { id: 'Q-1046', customer: 'Orion Ltd', amount: '$41,000', status: 'Confirmed' },
-];
+import { Plus, List, Loader2 } from 'lucide-react';
+import { apiFetch } from '../../lib/api';
 
 const COLUMNS = ['Draft', 'Pending Approval', 'Under Negotiation', 'Confirmed'];
 
+const STATUS_MAP: Record<string, string> = {
+  'draft': 'Draft',
+  'pending_approval': 'Pending Approval',
+  'revision_required': 'Pending Approval', // group together for simplicity
+  'under_negotiation': 'Under Negotiation',
+  'confirmed': 'Confirmed',
+  'approved': 'Confirmed',
+  'fulfillment': 'Confirmed',
+};
+
 export default function QuotationsList() {
+  const [quotations, setQuotations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadQuotations() {
+      try {
+        const data = await apiFetch('/quotations');
+        setQuotations(data);
+      } catch (err) {
+        console.error('Failed to load quotations:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadQuotations();
+  }, []);
   return (
     <div className="space-y-6 max-w-full overflow-x-auto pb-8">
       <div>
@@ -23,6 +43,12 @@ export default function QuotationsList() {
         </p>
       </div>
 
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="animate-spin text-slate-400" size={32} />
+        </div>
+      ) : (
+
       {/* Kanban Board */}
       <div className="flex items-start gap-4 min-w-max pb-4">
         {COLUMNS.map((column) => (
@@ -33,14 +59,14 @@ export default function QuotationsList() {
             <h3 className="font-display font-black text-sm text-slate-700 mb-4">{column}</h3>
             
             <div className="space-y-3">
-              {DUMMY_QUOTATIONS.filter((q) => q.status === column).map((quote) => (
+              {quotations.filter((q) => STATUS_MAP[q.status] === column).map((quote) => (
                 <Link
                   key={quote.id}
                   to={`/app/quotations/${quote.id}`}
                   className="block bg-slate-900 text-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
                 >
                   <p className="text-sm font-bold">
-                    {quote.customer} - {quote.amount}
+                    {quote.customerName || 'Unknown Customer'} - ${quote.amount?.toLocaleString()}
                   </p>
                 </Link>
               ))}
@@ -48,6 +74,7 @@ export default function QuotationsList() {
           </div>
         ))}
       </div>
+      )}
 
       <div className="flex items-center gap-4 sticky left-0">
         <Link

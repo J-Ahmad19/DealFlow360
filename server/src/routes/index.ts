@@ -19,6 +19,7 @@ import fulfillmentRoutes from '../modules/fulfillment/fulfillment.routes.js';
 import { ordersRoutes, subscriptionsRoutes } from '../modules/billing/billing.routes.js';
 import { portalRoutes } from '../modules/portal/portal.routes.js';
 import { dealHealthRoutes } from '../modules/dealHealth/deal-health.routes.js';
+import { dashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
 
 const apiRouter = Router();
 
@@ -37,6 +38,7 @@ apiRouter.use('/orders', ordersRoutes);
 apiRouter.use('/subscriptions', subscriptionsRoutes);
 apiRouter.use('/portal', portalRoutes);
 apiRouter.use('/deal-health', dealHealthRoutes);
+apiRouter.use('/dashboard', dashboardRoutes);
 // apiRouter.use('/deals', dealsRouter);
 // apiRouter.use('/users', usersRouter);
 
