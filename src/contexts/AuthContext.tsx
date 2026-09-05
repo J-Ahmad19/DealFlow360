@@ -94,13 +94,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function initAuth() {
       try {
         setLoading(true);
+        // Always probe internal session
         try {
-          // Try to fetch internal user
           const res = await apiFetch('/auth/me');
           if (res?.user) {
             setUser(res.user);
           } else {
-            // Provide default fallback user for seamless shell demo if unauthenticated
             setUser({
               id: 'usr-demo-001',
               email: 'sales.rep@dealflow360.io',
@@ -110,7 +109,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           }
         } catch {
-          // Fallback demo user
           setUser({
             id: 'usr-demo-001',
             email: 'sales.rep@dealflow360.io',
@@ -120,14 +118,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        try {
-          // Try to fetch customer portal user
-          const res = await apiFetch('/portal/auth/me');
-          if (res?.contact) {
-            setCustomer(res.contact);
+        // Only probe portal session when user is visiting portal-specific routes.
+        // This eliminates the expected 401 noise when internal employees load /app/*.
+        const isPortalRoute = window.location.pathname.startsWith('/portal');
+        if (isPortalRoute) {
+          try {
+            const res = await apiFetch('/portal/auth/me');
+            if (res?.contact) {
+              setCustomer(res.contact);
+            }
+          } catch {
+            setCustomer(null);
           }
-        } catch {
-          setCustomer(null);
         }
       } finally {
         setLoading(false);

@@ -21,8 +21,18 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   if (err instanceof AppError && err.isOperational) {
-    // Known, safe-to-expose error
-    logger.warn({ err, path: req.path }, err.message);
+    // Session probe endpoints (/auth/me, /portal/auth/me) returning 401
+    // are expected behavior on every page load — log at debug, not warn.
+    const isSessionProbe =
+      err.statusCode === 401 &&
+      (req.path === '/auth/me' || req.path === '/portal/auth/me');
+
+    if (isSessionProbe) {
+      logger.debug({ path: req.path }, '401 session probe (expected)');
+    } else {
+      logger.warn({ err, path: req.path }, err.message);
+    }
+
     sendError(res, err.code, err.message, err.statusCode);
     return;
   }
