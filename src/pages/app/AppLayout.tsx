@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
-import SidebarNav from '../../components/app/SidebarNav';
-import TopNav from '../../components/app/TopNav';
+import GlobalTopNav from '../../components/app/GlobalTopNav';
 import { PermissionGuard } from '../../components/auth/PermissionGuard';
 import Dashboard from '../Dashboard';
 import QuotationsPage from './QuotationsPage';
@@ -17,29 +15,16 @@ import SettingsPage from './SettingsPage';
 import { ShieldAlert } from 'lucide-react';
 
 export default function AppLayout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   return (
-    <div className="min-h-screen bg-slate-50 font-display flex flex-col md:flex-row overflow-x-hidden">
-      {/* Collapsible Left Sidebar Navigation */}
-      <SidebarNav
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
+    <div className="min-h-screen bg-slate-50 font-display flex flex-col overflow-x-hidden">
+      {/* Global Top Navigation */}
+      <GlobalTopNav />
 
-      {/* Main Workspace Column */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        {/* Top Header Navigation */}
-        <TopNav
-          sidebarOpen={!sidebarCollapsed}
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-
-        {/* Dynamic Route View Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          <Routes>
-            {/* 1. Dashboard */}
-            <Route path="dashboard" element={<Dashboard />} />
+      {/* Main Workspace */}
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-full mx-auto">
+        <Routes>
+          {/* 1. Dashboard */}
+          <Route path="dashboard" element={<Dashboard />} />
 
             {/* 2. Quotations & Builder */}
             <Route
@@ -145,7 +130,6 @@ export default function AppLayout() {
             <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
           </Routes>
         </main>
-      </div>
     </div>
   );
 }
