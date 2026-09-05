@@ -13,6 +13,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx scripts/seed.ts",
     "test": "JWT_SECRET=supersecret1234567890123456789012 DATABASE_URL=postgres://postgres:pass@localhost:5432/dealflow_db node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
