@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import { BillingEngine } from '../src/modules/billing/billing.engine.js';
 import { SubscriptionService } from '../src/modules/billing/subscription.service.js';
 import { OrderService } from '../src/modules/billing/order.service.js';
+import { BillingService } from '../src/modules/billing/billing.service.js';
 
 describe('Order & Hybrid Billing System', () => {
   let customerId: string;
@@ -122,5 +123,16 @@ describe('Order & Hybrid Billing System', () => {
     // Since we just started a monthly subscription today, refund should be close to 100% (value 1000 for simulation).
     expect(refunds.length).toBe(1);
     expect(refunds[0].amount).toBeGreaterThan(900); // Usually 900-1000 depending on exact ms elapsed
+  });
+
+  it('BillingService: should list invoice summaries with customer and order metadata', async () => {
+    const overview = await BillingService.getInvoiceOverview();
+
+    expect(overview.summary.totalInvoices).toBeGreaterThan(0);
+    expect(overview.invoices.length).toBeGreaterThan(0);
+    expect(overview.invoices[0]).toMatchObject({
+      customerName: expect.any(String),
+      amount: expect.any(Number),
+    });
   });
 });

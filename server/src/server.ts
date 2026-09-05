@@ -27,6 +27,17 @@ import { closeDbPool } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
 import apiRouter from './routes/index.js';
 import { startJobScheduler, stopJobScheduler } from './jobs/index.js';
+import { approvalsRoutes } from './modules/approvals/approvals.routes.js';
+import { subscriptionsRoutes } from './modules/subscriptions/subscriptions.routes.js';
+// 1. Import the router at the top of the file
+import { fulfillmentRoutes } from './modules/fulfillment/fulfillment.routes.js';
+import { companiesRoutes } from './modules/companies/companies.routes.js';
+import { productsRoutes } from './modules/products/products.routes.js';
+
+
+
+
+
 
 // ─── Create app ───────────────────────────────────────────────────────────────
 
@@ -59,7 +70,15 @@ app.use(requestLogger);
 
 // ─── API routes ───────────────────────────────────────────────────────────────
 
+app.use('/api/v1/approvals', approvalsRoutes);
 app.use('/api/v1', apiRouter);
+// ...
+app.use('/api/v1/subscriptions', subscriptionsRoutes);
+// 2. Mount it alongside your other routes (like quotations and approvals)
+app.use('/api/v1/fulfillment', fulfillmentRoutes);
+// Inside your route mounting area:
+app.use('/api/v1/companies', companiesRoutes);
+app.use('/api/v1/products', productsRoutes);
 
 // ─── 404 → must come after all routes ────────────────────────────────────────
 

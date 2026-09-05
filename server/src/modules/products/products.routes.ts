@@ -3,18 +3,56 @@ import { ProductsController } from './products.controller.js';
 import { authenticate } from '../../core/middleware/authenticate.js';
 import { requireRole } from '../../core/middleware/requireRole.js';
 
-export const productsRoutes = Router();
+const router = Router({ mergeParams: true });
 
-// Apply authentication middleware to all product routes
-productsRoutes.use(authenticate);
+// Enforce authentication globally for all product and category endpoints
+router.use(authenticate);
 
-// Categories
-productsRoutes.post('/categories', requireRole(['admin', 'sales_manager']), ProductsController.createCategory);
-productsRoutes.get('/categories', requireRole(['admin', 'sales_manager', 'finance', 'sales_rep']), ProductsController.listCategories);
-productsRoutes.patch('/categories/:id', requireRole(['admin', 'sales_manager']), ProductsController.updateCategory);
+// ─── Categories ─────────────────────────────────────────────────────────────
+router.post(
+  '/categories', 
+  requireRole(['admin', 'sales_manager']), 
+  ProductsController.createCategory
+);
 
-// Products
-productsRoutes.post('/', requireRole(['admin', 'sales_manager']), ProductsController.createProduct);
-productsRoutes.get('/', requireRole(['admin', 'sales_manager', 'finance', 'sales_rep']), ProductsController.listProducts);
-productsRoutes.get('/:id', requireRole(['admin', 'sales_manager', 'finance', 'sales_rep']), ProductsController.getProduct);
-productsRoutes.patch('/:id', requireRole(['admin', 'sales_manager']), ProductsController.updateProduct);
+router.get(
+  '/categories', 
+  requireRole(['admin', 'sales_manager', 'finance', 'sales_rep']), 
+  ProductsController.listCategories
+);
+
+router.patch(
+  '/categories/:id', 
+  requireRole(['admin', 'sales_manager']), 
+  ProductsController.updateCategory
+);
+
+
+// ─── Products ───────────────────────────────────────────────────────────────
+router.post(
+  '/', 
+  requireRole(['admin', 'sales_manager']), 
+  ProductsController.createProduct
+);
+
+router.get(
+  '/', 
+  requireRole(['admin', 'sales_manager', 'finance', 'sales_rep']), 
+  ProductsController.listProducts
+);
+
+router.get(
+  '/:id', 
+  requireRole(['admin', 'sales_manager', 'finance', 'sales_rep']), 
+  ProductsController.getProduct
+);
+
+router.patch(
+  '/:id', 
+  requireRole(['admin', 'sales_manager']), 
+  ProductsController.updateProduct
+);
+
+// Export both formats to ensure module resolution compatibility with Vite/TSX
+export const productsRoutes = router;
+export default router;

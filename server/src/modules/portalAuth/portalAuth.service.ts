@@ -3,16 +3,15 @@ import jwt from 'jsonwebtoken';
 import { config } from '../../config/index.js';
 import { PortalAuthRepository } from './portalAuth.repository.js';
 import { UnauthorizedError } from '../../core/errors/AppError.js';
-import { PortalJwtPayload } from './portalAuth.types.js';
+import { PortalJwtPayload, SignupInput } from './portalAuth.types.js';
 
 export class PortalAuthService {
   static async requestMagicLink(email: string) {
     const contact = await PortalAuthRepository.getContactByEmail(email);
 
     if (!contact) {
-      // Return true to prevent email enumeration, but log a warning internally
       console.warn(`[PORTAL AUTH] Request for non-existent contact email: ${email}`);
-      return true;
+      throw new UnauthorizedError('This customer account is not registered yet. Please sign up first.');
     }
 
     // Generate a secure 64-byte token
@@ -32,6 +31,33 @@ export class PortalAuthService {
     console.log('=========================================\n');
 
     return true;
+  }
+
+  static async signup(input: SignupInput) {
+    const existingContact = await PortalAuthRepository.getContactByEmail(input.email);
+    if (existingContact) {
+      throw new UnauthorizedError('An account already exists for this email. Please log in instead.');
+    }
+
+    let company = await PortalAuthRepository.getCompanyByName(input.companyName);
+    if (!company) {
+      company = await PortalAuthRepository.createCompany(input.companyName);
+    }
+
+    const contact = await PortalAuthRepository.createContact({
+      companyId: company.id,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      email: input.email,
+    });
+
+    await this.requestMagicLink(input.email);
+
+    return {
+      contactId: contact.id,
+      companyId: company.id,
+      email: input.email,
+    };
   }
 
   static async verifyToken(token: string) {

@@ -6,10 +6,33 @@ import { orders, billingSchedules, subscriptions, payments } from '../../db/sche
 import { BillingEngine } from './billing.engine.js';
 import { SubscriptionService } from './subscription.service.js';
 import { OrderService } from './order.service.js';
+import { BillingService } from './billing.service.js';
 
 const billingEngine = new BillingEngine();
 const subscriptionService = new SubscriptionService(billingEngine);
 const orderService = new OrderService(billingEngine, subscriptionService);
+
+export async function listInvoices(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await BillingService.getInvoiceOverview();
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const invoice = await BillingService.getInvoiceById(req.params.id);
+    if (!invoice) {
+      res.status(404).json({ error: 'Invoice not found' });
+      return;
+    }
+    res.json(invoice);
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

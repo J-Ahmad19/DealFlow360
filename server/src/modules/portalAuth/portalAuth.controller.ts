@@ -1,9 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import { PortalAuthService } from './portalAuth.service.js';
-import { requestLinkSchema, verifyTokenSchema } from './portalAuth.types.js';
+import { requestLinkSchema, signupSchema, verifyTokenSchema } from './portalAuth.types.js';
 import { ValidationError } from '../../core/errors/AppError.js';
 
 export class PortalAuthController {
+  static async signup(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = signupSchema.safeParse(req.body);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0].message);
+      }
+
+      const result = await PortalAuthService.signup(parsed.data);
+
+      res.status(201).json({
+        message: 'Account created. A magic link has been sent to your email.',
+        contactId: result.contactId,
+        companyId: result.companyId,
+        email: result.email,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async requestLink(req: Request, res: Response, next: NextFunction) {
     try {
       const parsed = requestLinkSchema.safeParse(req.body);

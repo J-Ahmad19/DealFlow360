@@ -189,5 +189,27 @@ describe('Quotations API', () => {
         next();
       });
     });
+
+    it('should allow a quotation to move from pending_approval to under_negotiation via drag-and-drop', async () => {
+      const [q] = await db
+        .insert(quotations)
+        .values({
+          title: 'Kanban Drag Test',
+          customerId,
+          ownerId: mockUserId,
+          status: 'pending_approval',
+        })
+        .returning();
+
+      const response = await request(app)
+        .patch(`/api/v1/quotations/${q.id}/status`)
+        .send({ status: 'under_negotiation' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe('under_negotiation');
+
+      await db.delete(quotations).where(eq(quotations.id, q.id));
+      await db.delete(auditLogs).where(eq(auditLogs.entityId, q.id));
+    });
   });
 });

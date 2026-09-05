@@ -1,16 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
 import { ProductsService } from './products.service.js';
 import { sendSuccess } from '../../core/http/response.js';
-import { createProductCategorySchema, updateProductCategorySchema, createProductSchema, updateProductSchema } from './products.types.js';
+import { 
+  createProductCategorySchema, 
+  updateProductCategorySchema, 
+  createProductSchema, 
+  updateProductSchema 
+} from './products.types.js';
 
 export const ProductsController = {
+  /**
+   * CATEGORIES
+   */
   createCategory: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = createProductCategorySchema.parse(req.body);
+      // req.user is guaranteed by the authenticate middleware
       const category = await ProductsService.createCategory(data, req.user!.id);
       sendSuccess(res, category, 201);
     } catch (err) {
-      next(err);
+      next(err); // Passes Zod validation errors and DB errors to global error handler
     }
   },
 
@@ -33,6 +42,9 @@ export const ProductsController = {
     }
   },
 
+  /**
+   * PRODUCTS
+   */
   createProduct: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = createProductSchema.parse(req.body);
@@ -45,7 +57,10 @@ export const ProductsController = {
 
   listProducts: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const activeOnly = req.query.active === 'true';
+      // Robustly handle optional query parameters for filtering
+      const activeQuery = req.query.active;
+      const activeOnly = activeQuery !== undefined ? activeQuery === 'true' : undefined;
+      
       const products = await ProductsService.listProducts(activeOnly);
       sendSuccess(res, products);
     } catch (err) {
@@ -56,6 +71,9 @@ export const ProductsController = {
   getProduct: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const product = await ProductsService.getProduct(req.params.id);
+      if (!product) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
       sendSuccess(res, product);
     } catch (err) {
       next(err);

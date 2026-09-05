@@ -7,6 +7,7 @@ import PipelinePage from './PipelinePage';
 import ApprovalsPage from './ApprovalsPage';
 import FulfillmentPage from './FulfillmentPage';
 import BillingPage from './BillingPage';
+import DealHealthPage from './DealHealthPage';
 import SubscriptionsPage from './SubscriptionsPage';
 import CustomersPage from './CustomersPage';
 import ProductsPage from './ProductsPage';
@@ -26,110 +27,120 @@ export default function AppLayout() {
           {/* 1. Dashboard */}
           <Route path="dashboard" element={<Dashboard />} />
 
-            {/* 2. Quotations & Builder */}
-            <Route
-              path="quotations"
-              element={
-                <PermissionGuard permission="QUOTATION_READ" fallback={<AccessDenied module="Quotations" />}>
-                  <QuotationsPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 2. Quotations & Builder */}
+          <Route
+            path="quotations/*" 
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'finance', 'sales_rep']} fallback={<AccessDenied module="Quotations" />}>
+                <QuotationsPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 3. Deal Pipeline */}
-            <Route
-              path="pipeline"
-              element={
-                <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Deal Pipeline" />}>
-                  <PipelinePage />
-                </PermissionGuard>
-              }
-            />
+          {/* 3. Deal Pipeline */}
+          <Route
+            path="pipeline"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Deal Pipeline" />}>
+                <PipelinePage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 4. Approvals Queue */}
-            <Route
-              path="approvals"
-              element={
-                <PermissionGuard role={['admin', 'sales_manager', 'finance']} fallback={<AccessDenied module="Approvals Queue" />}>
-                  <ApprovalsPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 4. Approvals Queue */}
+          <Route
+            path="approvals/*"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'finance', 'sales_rep']} fallback={<AccessDenied module="Approvals Queue" />}>
+                <ApprovalsPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 5. Fulfillment & Stock */}
-            <Route
-              path="fulfillment"
-              element={
-                <PermissionGuard permission="FULFILLMENT_MANAGE" fallback={<AccessDenied module="Fulfillment & Stock" />}>
-                  <FulfillmentPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 5. Fulfillment & Stock */}
+          <Route
+            path="fulfillment/*"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'finance', 'sales_rep']} fallback={<AccessDenied module="Fulfillment & Stock" />}>
+                <FulfillmentPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 6. Invoices & Billing */}
-            <Route
-              path="billing"
-              element={
-                <PermissionGuard permission="BILLING_RECONCILE" fallback={<AccessDenied module="Invoices & Billing" />}>
-                  <BillingPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 6. Invoices & Billing */}
+          <Route
+            path="billing/*"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'finance', 'sales_rep']} fallback={<AccessDenied module="Invoices & Billing" />}>
+                <BillingPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 7. Subscriptions */}
-            <Route
-              path="subscriptions"
-              element={
-                <PermissionGuard role={['admin', 'finance', 'sales_rep']} fallback={<AccessDenied module="Subscriptions" />}>
-                  <SubscriptionsPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 7. Deal Health */}
+          <Route
+            path="deal-health"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'finance', 'sales_rep']} fallback={<AccessDenied module="Deal Health" />}>
+                <DealHealthPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 8. Customers */}
-            <Route
-              path="customers"
-              element={
-                <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Customers & Accounts" />}>
-                  <CustomersPage />
-                </PermissionGuard>
-              }
-            />
+         {/* 8. Subscriptions */}
+          <Route
+            path="subscriptions/*"
+            element={
+              <PermissionGuard role={['admin', 'finance', 'sales_rep']} fallback={<AccessDenied module="Subscriptions" />}>
+                <SubscriptionsPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 9. Products & Catalog */}
-            <Route
-              path="products"
-              element={
-                <PermissionGuard role={['admin', 'sales_manager']} fallback={<AccessDenied module="Product Catalog" />}>
-                  <ProductsPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 9. Customers */}
+          <Route
+            path="customers"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Customers & Accounts" />}>
+                <CustomersPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 10. Commercial Reports */}
-            <Route
-              path="reports"
-              element={
-                <PermissionGuard permission="REPORT_VIEW" fallback={<AccessDenied module="Commercial Reports" />}>
-                  <ReportsPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 10. Products & Catalog */}
+          <Route
+            path="products"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Product Catalog" />}>
+                <ProductsPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* 11. Settings & Users */}
-            <Route
-              path="settings"
-              element={
-                <PermissionGuard permission="USER_MANAGE" fallback={<AccessDenied module="System Settings" />}>
-                  <SettingsPage />
-                </PermissionGuard>
-              }
-            />
+          {/* 11. Commercial Reports */}
+          <Route
+            path="reports"
+            element={
+              <PermissionGuard role={['admin', 'sales_manager', 'finance', 'sales_rep']} fallback={<AccessDenied module="Commercial Reports" />}>
+                <ReportsPage />
+              </PermissionGuard>
+            }
+          />
 
-            {/* Fallback to Dashboard */}
-            <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
-          </Routes>
-        </main>
+          {/* 11. Settings & Users */}
+          <Route
+            path="settings"
+            element={
+              <PermissionGuard role={['admin']} fallback={<AccessDenied module="System Settings" />}>
+                <SettingsPage />
+              </PermissionGuard>
+            }
+          />
+
+          {/* Fallback to Dashboard */}
+          <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+        </Routes>
+      </main>
     </div>
   );
 }

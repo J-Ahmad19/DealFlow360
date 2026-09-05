@@ -86,6 +86,35 @@ describe('Customer Portal Auth', () => {
     expect(res.body.message).toMatch(/magic link has been sent/);
   });
 
+  it('shows a clear sign-up-first message when the customer is not registered', async () => {
+    (db.limit as jest.Mock).mockResolvedValueOnce(null);
+
+    const res = await request(app)
+      .post('/api/v1/portal/auth/request-link')
+      .send({ email: 'missing@example.com' });
+
+    expect(res.statusCode).toEqual(401);
+    expect(res.body.error.message).toMatch(/sign up first|not registered/i);
+  });
+
+  it('creates a customer account and sends a magic link', async () => {
+    (db.limit as jest.Mock).mockResolvedValueOnce(null);
+    (db.limit as jest.Mock).mockResolvedValueOnce([{ id: 'company-123', name: 'Acme Corp' }]);
+    (db.limit as jest.Mock).mockResolvedValueOnce([{ id: 'contact-456', email: 'new@acme.com' }]);
+
+    const res = await request(app)
+      .post('/api/v1/portal/auth/signup')
+      .send({
+        firstName: 'Jamie',
+        lastName: 'Moss',
+        email: 'new@acme.com',
+        companyName: 'Acme Corp',
+      });
+
+    expect(res.statusCode).toEqual(201);
+    expect(res.body.message).toMatch(/account created|magic link/i);
+  });
+
   it('verifies a magic link token and sets a cookie', async () => {
     (db.limit as jest.Mock).mockResolvedValueOnce([{
       id: 'token-1',

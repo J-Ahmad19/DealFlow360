@@ -11,8 +11,6 @@ export default function QuotationDetail() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  // Local state for interactive discount fields
   const [lines, setLines] = useState<any[]>([]);
 
   const showToast = useCallback((type: 'success' | 'error', message: string) => {
@@ -26,15 +24,13 @@ export default function QuotationDetail() {
         const data = await apiFetch(`/quotations/${id}`);
         setQuotation(data);
         
-        // Initialize line items in local state (with some mock data if empty)
         if (data.lines && data.lines.length > 0) {
           setLines(data.lines);
         } else {
-          // Fallback to match the wireframe explicitly for demo purposes
           setLines([
-            { id: '1', productNameSnapshot: 'Laptop Pro 14', quantity: 2, unitPrice: 1200, discount: 12, limit: 15 },
-            { id: '2', productNameSnapshot: 'Onsite Setup Service', quantity: 1, unitPrice: 450, discount: 18, limit: 10 },
-            { id: '3', productNameSnapshot: 'Extended Warranty', quantity: 1, unitPrice: 180, discount: 10, limit: 15 },
+            { id: '1', productId: 'mock-uuid-1', productNameSnapshot: 'Laptop Pro 14', quantity: 2, unitPrice: 1200, discount: 12, limit: 15 },
+            { id: '2', productId: 'mock-uuid-2', productNameSnapshot: 'Onsite Setup Service', quantity: 1, unitPrice: 450, discount: 18, limit: 10 },
+            { id: '3', productId: 'mock-uuid-3', productNameSnapshot: 'Extended Warranty', quantity: 1, unitPrice: 180, discount: 10, limit: 15 },
           ]);
         }
       } catch (err) {
@@ -59,10 +55,18 @@ export default function QuotationDetail() {
     if (!quotation) return;
     setSaving(true);
     try {
-      // Only allowed for draft/revision_required/under_negotiation quotations
+      const payloadLines = lines.map(line => ({
+        productId: line.productId,
+        quantity: Number(line.quantity),
+        discount: Number(line.discount)
+      }));
+
       const updatedQ = await apiFetch(`/quotations/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ title: quotation.title }),
+        body: JSON.stringify({ 
+          title: quotation.title,
+          lines: payloadLines 
+        }),
       });
       setQuotation(updatedQ);
       showToast('success', 'Draft saved successfully.');
@@ -78,10 +82,8 @@ export default function QuotationDetail() {
     if (!quotation) return;
     setSubmitting(true);
     try {
-      // POST /:id/submit — dedicated state transition endpoint
       await apiFetch(`/quotations/${id}/submit`, { method: 'POST' });
       showToast('success', 'Quotation submitted for approval!');
-      // Reload quotation to reflect the new status
       const refreshed = await apiFetch(`/quotations/${id}`);
       setQuotation(refreshed);
     } catch (err: any) {
@@ -101,7 +103,14 @@ export default function QuotationDetail() {
   }
 
   if (!quotation) {
-    return <div className="text-red-500 font-bold p-8">Quotation not found</div>;
+    return (
+      <div className="max-w-6xl mx-auto card-tactile bg-white p-8 text-center mt-12">
+        <h2 className="text-2xl font-black text-slate-900">Quotation not found</h2>
+        <button onClick={() => navigate('/app/quotations')} className="btn-tactile btn-primary px-6 py-3 mt-6">
+          Return to Board
+        </button>
+      </div>
+    );
   }
 
   const quoteId = quotation.id.substring(0, 8).toUpperCase();
@@ -110,61 +119,64 @@ export default function QuotationDetail() {
   const canSubmit = ['draft', 'revision_required', 'under_negotiation'].includes(quotation.status);
 
   return (
-    <div className="max-w-6xl space-y-8 bg-[#141211] rounded-3xl p-6 sm:p-10 border-4 border-slate-900 shadow-inner min-h-[calc(100vh-4rem)] relative">
+    <div className="max-w-6xl mx-auto space-y-8 card-tactile bg-white p-6 sm:p-10 min-h-[calc(100vh-4rem)] relative mb-12">
+      
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border text-sm font-bold transition-all animate-in fade-in slide-in-from-top-2 ${
+        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border-2 text-sm font-black transition-all animate-in fade-in slide-in-from-top-2 ${
           toast.type === 'success'
-            ? 'bg-emerald-950 border-emerald-700 text-emerald-400'
-            : 'bg-red-950 border-red-700 text-red-400'
+            ? 'bg-brand-50 border-brand-500 text-brand-600'
+            : 'bg-red-50 border-red-500 text-red-600'
         }`}>
-          {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+          {toast.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
           {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <button
             onClick={() => navigate('/app/quotations')}
-            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-xs font-bold mb-3 transition-colors"
+            className="flex items-center gap-1.5 text-slate-400 hover:text-brand-500 text-xs font-black uppercase tracking-widest mb-4 transition-colors"
           >
-            <ArrowLeft size={14} /> Back to Board
+            <ArrowLeft size={16} /> Back to Board
           </button>
-          <h1 className="text-3xl font-display text-slate-100 tracking-tight">
-            Quotation: <span className="text-brand-400">#{quoteId}</span>
+          <h1 className="text-4xl font-display font-black text-slate-900 tracking-tight">
+            Quotation <span className="text-brand-500">#{quoteId}</span>
           </h1>
-          <p className="text-slate-500 font-bold text-sm mt-1">
-            {customerName} &mdash; <span className="capitalize">{quotation.status?.replace(/_/g, ' ')}</span>
+          <p className="text-slate-500 font-bold text-base mt-2">
+            {customerName}
           </p>
         </div>
-        <div className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest ${
-          isDraft ? 'bg-slate-800 border-slate-600 text-slate-400'
-          : quotation.status === 'confirmed' ? 'bg-emerald-950 border-emerald-700 text-emerald-400'
-          : quotation.status === 'pending_approval' ? 'bg-amber-950 border-amber-700 text-amber-400'
-          : 'bg-blue-950 border-blue-700 text-blue-400'
+        
+        {/* Status Badge */}
+        <div className={`px-4 py-2 rounded-xl border-2 text-xs font-black uppercase tracking-widest ${
+          isDraft ? 'bg-slate-100 border-slate-200 text-slate-500'
+          : quotation.status === 'confirmed' ? 'bg-brand-50 border-brand-200 text-brand-600'
+          : ['pending_approval', 'revision_required'].includes(quotation.status) ? 'bg-amber-50 border-amber-200 text-amber-600'
+          : 'bg-blue-50 border-blue-200 text-blue-600'
         }`}>
           {quotation.status?.replace(/_/g, ' ')}
         </div>
       </div>
 
       {/* Top Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-400">Customer</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-3xl border-2 border-slate-100">
+        <div className="space-y-2">
+          <label className="block text-xs font-black uppercase tracking-widest text-slate-500">Customer</label>
           <input
             type="text"
-            className="w-full bg-[#1c1a19] text-slate-300 border border-slate-700/50 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50 transition-all"
+            className="w-full bg-white text-slate-900 border-2 border-slate-200 rounded-2xl px-5 py-3 text-base font-bold focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 transition-all"
             defaultValue={customerName}
             readOnly
           />
         </div>
-        <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-400">Price List</label>
+        <div className="space-y-2">
+          <label className="block text-xs font-black uppercase tracking-widest text-slate-500">Price List</label>
           <input
             type="text"
-            className="w-full bg-[#1c1a19] text-slate-300 border border-slate-700/50 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50 transition-all"
+            className="w-full bg-white text-slate-900 border-2 border-slate-200 rounded-2xl px-5 py-3 text-base font-bold focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 transition-all"
             defaultValue="Standard 2026"
             readOnly
           />
@@ -172,42 +184,45 @@ export default function QuotationDetail() {
       </div>
 
       {/* Line Items Table */}
-      <div className="bg-[#1c1a19]/50 rounded-3xl border border-slate-800 overflow-hidden">
+      <div className="bg-white rounded-3xl border-2 border-slate-200 overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[#1c1a19] text-slate-400 border-b border-slate-800">
+          <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-200">
             <tr>
-              <th className="px-6 py-4 font-bold font-display">Product</th>
-              <th className="px-6 py-4 font-bold font-display">Qty</th>
-              <th className="px-6 py-4 font-bold font-display">Price</th>
-              <th className="px-6 py-4 font-bold font-display">Discount</th>
-              <th className="px-6 py-4 font-bold font-display">Limit</th>
-              <th className="px-6 py-4 font-bold font-display">Status</th>
+              <th className="px-6 py-4 font-black uppercase tracking-wider text-xs">Product</th>
+              <th className="px-6 py-4 font-black uppercase tracking-wider text-xs">Qty</th>
+              <th className="px-6 py-4 font-black uppercase tracking-wider text-xs">Price</th>
+              <th className="px-6 py-4 font-black uppercase tracking-wider text-xs">Discount</th>
+              <th className="px-6 py-4 font-black uppercase tracking-wider text-xs">Limit</th>
+              <th className="px-6 py-4 font-black uppercase tracking-wider text-xs">Status</th>
             </tr>
           </thead>
-          <tbody className="text-slate-300 divide-y divide-slate-800/50">
+          <tbody className="text-slate-900 divide-y-2 divide-slate-50">
             {lines.map((line) => {
               const limit = line.limit || 15;
               const isOver = line.discount > limit;
               return (
-                <tr key={line.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="px-6 py-4">{line.productNameSnapshot}</td>
-                  <td className="px-6 py-4">{line.quantity}</td>
-                  <td className="px-6 py-4">${line.unitPrice?.toLocaleString()}</td>
-                  <td className="px-6 py-4">
-                    <div className="relative w-20">
+                <tr key={line.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-5 font-bold">{line.productNameSnapshot}</td>
+                  <td className="px-6 py-5 font-bold">{line.quantity}</td>
+                  <td className="px-6 py-5 font-bold">${line.unitPrice?.toLocaleString()}</td>
+                  <td className="px-6 py-5">
+                    <div className="relative w-24">
                       <input
                         type="number"
                         value={line.discount}
                         onChange={(e) => handleDiscountChange(line.id, e.target.value)}
-                        className={`w-full bg-slate-900 border rounded-lg px-3 py-1.5 text-sm focus:outline-none transition-colors ${
-                          isOver ? 'border-red-500/50 text-red-400' : 'border-slate-700 text-slate-300'
-                        }`}
+                        disabled={!isDraft && quotation.status !== 'under_negotiation'}
+                        className={`w-full bg-white border-2 rounded-xl px-4 py-2 text-base font-black focus:outline-none focus:ring-4 transition-all ${
+                          isOver 
+                            ? 'border-red-400 text-red-600 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-slate-200 text-slate-900 focus:border-brand-500 focus:ring-brand-500/20'
+                        } disabled:opacity-50 disabled:bg-slate-50`}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">%</span>
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-black pointer-events-none">%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-500">{limit}%</td>
-                  <td className={`px-6 py-4 font-bold ${isOver ? 'text-red-400' : 'text-emerald-400'}`}>
+                  <td className="px-6 py-5 text-slate-400 font-bold">{limit}%</td>
+                  <td className={`px-6 py-5 font-black ${isOver ? 'text-red-500' : 'text-brand-500'}`}>
                     {isOver ? `OVER (+${line.discount - limit}pt)` : 'OK'}
                   </td>
                 </tr>
@@ -218,42 +233,43 @@ export default function QuotationDetail() {
       </div>
 
       {/* Warning Box */}
-      <div className="bg-[#1c180b] border border-[#524424] rounded-2xl p-5 shadow-sm">
-        <p className="text-[#a89047] font-medium text-sm">
+      <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm flex items-start gap-3">
+        <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={20} />
+        <p className="text-amber-700 font-bold text-sm leading-relaxed">
           Discount is checked against each line's own limit live, as soon as it is entered, not only at submit time.
         </p>
       </div>
 
       {/* Upsell Suggestions */}
-      <div className="pt-4">
-        <h3 className="text-lg font-display text-blue-400 mb-5">
+      <div className="pt-6">
+        <h3 className="text-xl font-black text-secondary-500 mb-6">
           Upsell and Cross-Sell Suggestions
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <button className="bg-[#1c1a19] border border-slate-700/60 hover:border-slate-500 rounded-3xl p-5 text-left transition-all hover:bg-slate-800/40 hover:-translate-y-0.5 shadow-sm">
-            <p className="font-bold text-slate-200">+ Wireless Mouse</p>
-            <p className="text-sm text-slate-400 mt-2">Margin +$18</p>
+          <button className="card-tactile bg-white border-2 border-slate-200 hover:border-secondary-400 p-6 text-left transition-all group flex flex-col">
+            <span className="font-black text-slate-900 group-hover:text-secondary-500 transition-colors">+ Wireless Mouse</span>
+            <span className="text-sm font-bold text-slate-500 mt-2">Margin +$18</span>
           </button>
-          <button className="bg-[#1c1a19] border border-slate-700/60 hover:border-slate-500 rounded-3xl p-5 text-left transition-all hover:bg-slate-800/40 hover:-translate-y-0.5 shadow-sm">
-            <p className="font-bold text-slate-200">+ Docking Station</p>
-            <p className="text-sm text-slate-400 mt-2">Promo: 12% off</p>
+          <button className="card-tactile bg-white border-2 border-slate-200 hover:border-secondary-400 p-6 text-left transition-all group flex flex-col">
+            <span className="font-black text-slate-900 group-hover:text-secondary-500 transition-colors">+ Docking Station</span>
+            <span className="text-sm font-bold text-brand-500 mt-2">Promo: 12% off</span>
           </button>
-          <button className="bg-[#1c1a19] border border-slate-700/60 hover:border-slate-500 rounded-3xl p-5 text-left transition-all hover:bg-slate-800/40 hover:-translate-y-0.5 shadow-sm">
-            <p className="font-bold text-slate-200">+ Care Plan 2yr</p>
-            <p className="text-sm text-slate-400 mt-2">Margin +$46</p>
+          <button className="card-tactile bg-white border-2 border-slate-200 hover:border-secondary-400 p-6 text-left transition-all group flex flex-col">
+            <span className="font-black text-slate-900 group-hover:text-secondary-500 transition-colors">+ Care Plan 2yr</span>
+            <span className="text-sm font-bold text-slate-500 mt-2">Margin +$46</span>
           </button>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-4 pt-6 border-t border-slate-800">
+      <div className="flex items-center gap-4 pt-8 mt-8 border-t-2 border-slate-100">
         {isDraft && (
           <button
             onClick={handleSaveDraft}
             disabled={saving}
-            className="btn-tactile px-7 py-3 text-sm flex items-center gap-2 bg-[#1c1a19] hover:bg-slate-800 text-white rounded-full border border-slate-700/60 transition-colors font-bold shadow-sm disabled:opacity-50"
+            className="btn-tactile bg-white border-2 border-slate-200 text-slate-800 hover:bg-slate-50 px-8 py-4 text-base flex items-center justify-center gap-2 rounded-2xl font-black disabled:opacity-50"
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
         )}
@@ -261,14 +277,16 @@ export default function QuotationDetail() {
           <button
             onClick={handleSubmitForApproval}
             disabled={submitting}
-            className="btn-tactile px-7 py-3 text-sm flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg shadow-blue-500/20 transition-colors font-bold disabled:opacity-50"
+            className="btn-tactile btn-primary px-8 py-4 text-base flex items-center justify-center gap-2 rounded-2xl font-black disabled:opacity-50"
           >
-            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            {submitting ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
             {submitting ? 'Submitting...' : 'Submit for Approval'}
           </button>
         )}
         {!canSubmit && (
-          <p className="text-xs text-slate-500 font-bold">Status: <span className="capitalize text-slate-400">{quotation.status?.replace(/_/g, ' ')}</span> — no further actions available from this view.</p>
+          <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-500 w-full text-center">
+            Status: <span className="font-black uppercase text-slate-700">{quotation.status?.replace(/_/g, ' ')}</span> — no further actions available from this view.
+          </div>
         )}
       </div>
     </div>

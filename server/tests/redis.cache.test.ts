@@ -40,7 +40,17 @@ describe('Redis Cache Layer (Upstash / Memory Fallback)', () => {
     expect(typeof limiter).toBe('function');
   });
 
-  it('5. idempotencyMiddleware passes through new requests cleanly when key missing', async () => {
+  it('5. createRateLimiter does not throw when the client is incompatible', () => {
+    expect(() =>
+      createRateLimiter({
+        name: 'test-limiter-redis-fallback',
+        windowMs: 60000,
+        max: 10,
+      }),
+    ).not.toThrow();
+  });
+
+  it('6. idempotencyMiddleware passes through new requests cleanly when key missing', async () => {
     const req: any = { headers: {}, body: {} };
     const res: any = {};
     const next = jest.fn();

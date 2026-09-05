@@ -10,7 +10,7 @@ export const QuotationsRepository = {
         .values(quotationData)
         .returning();
 
-      if (linesData.length > 0) {
+      if (linesData && linesData.length > 0) {
         const linesToInsert = linesData.map((line) => ({
           ...line,
           quotationId: quotation.id,
@@ -41,7 +41,12 @@ export const QuotationsRepository = {
       where: eq(quotationLines.quotationId, id),
     });
 
-    return { ...q[0].quotation, customerName: q[0].customerName, ownerName: q[0].ownerName, lines };
+    return { 
+      ...q[0].quotation, 
+      customerName: q[0].customerName, 
+      ownerName: q[0].ownerName, 
+      lines 
+    };
   },
 
   update: async (id: string, quotationData: any, linesData?: any[]) => {
@@ -64,7 +69,6 @@ export const QuotationsRepository = {
       }
 
       if (linesData) {
-        // Simple approach: delete all existing lines and re-insert
         await tx
           .delete(quotationLines)
           .where(eq(quotationLines.quotationId, id));

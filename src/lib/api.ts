@@ -14,6 +14,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const url = `/api/v1${endpoint}`;
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,

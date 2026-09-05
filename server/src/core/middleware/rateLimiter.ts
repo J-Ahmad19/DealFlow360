@@ -22,11 +22,14 @@ export interface CreateLimiterOptions {
 
 export function createRateLimiter(options: CreateLimiterOptions) {
   const client = getRedisClient();
+  const redisClientSupportsLegacyCommandApi =
+    !!client && typeof (client as { call?: (...args: unknown[]) => unknown }).call === 'function';
 
-  const store = client
+  const store = redisClientSupportsLegacyCommandApi
     ? new RedisStore({
         sendCommand: async (...args: string[]) => {
-          return (client as any).call(args[0], ...args.slice(1));
+          const [command, ...rest] = args;
+          return (client as any).call(command, ...rest);
         },
         prefix: `dealflow:rate:${options.name}:`,
       })

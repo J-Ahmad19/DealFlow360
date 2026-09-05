@@ -1,11 +1,14 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useNavigate } from 'react-router-dom';
 
 interface KanbanCardProps {
   quote: any;
 }
 
 export function KanbanCard({ quote }: KanbanCardProps) {
+  const navigate = useNavigate();
+
   const {
     attributes,
     listeners,
@@ -36,6 +39,11 @@ export function KanbanCard({ quote }: KanbanCardProps) {
       style={style}
       {...attributes}
       {...listeners}
+      // Stop the drag event from interfering with the navigation click
+      onClick={(e) => {
+        e.stopPropagation();
+        navigate(`/app/quotations/${quote.id}`);
+      }}
       className="bg-slate-800 border border-slate-700/50 rounded-2xl p-4 shadow-sm hover:border-slate-600 transition-colors cursor-grab active:cursor-grabbing group"
     >
       <div className="flex justify-between items-start mb-2">

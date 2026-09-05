@@ -5,6 +5,7 @@ import { authenticatePortal } from '../../core/middleware/authenticatePortal.js'
 
 const router = Router();
 
+router.post('/signup', portalAuthLimiter, PortalAuthController.signup);
 router.post('/request-link', portalAuthLimiter, PortalAuthController.requestLink);
 router.post('/verify', PortalAuthController.verify);
 router.post('/logout', authenticatePortal, PortalAuthController.logout);

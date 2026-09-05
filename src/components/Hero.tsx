@@ -101,26 +101,14 @@ export default function Hero() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link
-              to="/auth/signup"
+              to="/auth/login"
               className="btn-tactile btn-primary px-8 py-4 text-lg"
             >
-              Get Started
+              Log In
               <ArrowRight
                 size={20}
                 className="ml-2"
               />
-            </Link>
-            <Link
-              to="/auth/login"
-              className="btn-tactile btn-secondary px-8 py-4 text-lg"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/portal/login"
-              className="px-6 py-4 text-base font-bold text-secondary-600 hover:text-secondary-700 bg-secondary-50 hover:bg-secondary-100/80 rounded-2xl border-2 border-secondary-200 transition-all"
-            >
-              View My Quote
             </Link>
           </motion.div>
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiFetch } from '../../lib/api';
 
 export default function PortalLogin() {
@@ -6,22 +7,25 @@ export default function PortalLogin() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setMessage('');
     setLoading(true);
-    
+
     try {
       const res = await apiFetch('/portal/auth/request-link', {
         method: 'POST',
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email }),
       });
-      
-      setMessage(res.message);
+
+      setMessage(res.message || 'If your account exists, a magic link has been sent.');
     } catch (err: any) {
-      setError(err.message || 'Failed to request magic link');
+      const statusMessage = err?.statusCode === 401 || err?.message?.toLowerCase().includes('account')
+        ? 'This customer account is not registered yet. Please sign up first.'
+        : err.message || 'Failed to request magic link';
+      setError(statusMessage);
     } finally {
       setLoading(false);
     }
@@ -67,7 +71,7 @@ export default function PortalLogin() {
               required
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -76,6 +80,13 @@ export default function PortalLogin() {
             {loading ? 'Sending link...' : 'Send Magic Link'}
           </button>
         </form>
+
+        <div className="mt-6 text-center text-sm text-slate-500">
+          Need access?{' '}
+          <Link to="/portal/signup" className="font-bold text-brand-600 hover:text-brand-500">
+            Sign up first
+          </Link>
+        </div>
       </div>
     </div>
   );

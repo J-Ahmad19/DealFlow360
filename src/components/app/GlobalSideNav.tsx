@@ -22,16 +22,17 @@ interface NavItem {
   role?: UserRole[];
 }
 
+// Updated to explicitly allow 'sales_rep' to see all tabs for the demo
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
-  { label: 'Quotations', path: '/app/quotations', icon: FileText, permission: 'QUOTATION_READ' },
-  { label: 'Approvals', path: '/app/approvals', icon: CheckSquare, role: ['admin', 'sales_manager', 'finance'] },
-  { label: 'Fulfillment', path: '/app/fulfillment', icon: Package, permission: 'FULFILLMENT_MANAGE' },
+  { label: 'Quotations', path: '/app/quotations', icon: FileText, role: ['admin', 'sales_manager', 'finance', 'sales_rep'] },
+  { label: 'Approvals', path: '/app/approvals', icon: CheckSquare, role: ['admin', 'sales_manager', 'finance', 'sales_rep'] },
+  { label: 'Fulfillment', path: '/app/fulfillment', icon: Package, role: ['admin', 'sales_manager', 'finance', 'sales_rep'] },
   { label: 'Subscriptions', path: '/app/subscriptions', icon: Repeat, role: ['admin', 'finance', 'sales_rep'] },
-  { label: 'Invoices', path: '/app/billing', icon: Receipt, permission: 'BILLING_RECONCILE' },
+  { label: 'Invoices', path: '/app/billing', icon: Receipt, role: ['admin', 'sales_manager', 'finance', 'sales_rep'] },
   { label: 'Deal Health', path: '/app/deal-health', icon: Activity },
-  { label: 'Reports', path: '/app/reports', icon: BarChart, permission: 'REPORT_VIEW' },
-  { label: 'Product', path: '/app/products', icon: Box, role: ['admin', 'sales_manager'] },
+  { label: 'Reports', path: '/app/reports', icon: BarChart, role: ['admin', 'sales_manager', 'finance', 'sales_rep'] },
+  { label: 'Product', path: '/app/products', icon: Box, role: ['admin', 'sales_manager', 'sales_rep'] },
 ];
 
 export default function GlobalSideNav() {

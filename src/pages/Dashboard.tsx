@@ -66,7 +66,7 @@ export default function Dashboard() {
       <div className="flex items-center gap-4 shrink-0">
         <PermissionGuard permission="QUOTATION_CREATE">
           <Link
-            to="/app/quotations?action=new"
+            to="/app/quotations/new"
             className="btn-tactile btn-primary px-6 py-3 text-sm flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
           >
             <Plus size={18} />

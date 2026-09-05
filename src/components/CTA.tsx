@@ -38,23 +38,11 @@ export default function CTA() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link
-              to="/auth/signup"
+              to="/auth/login"
               className="btn-tactile btn-primary px-8 py-5 text-lg"
             >
-              Get Started
+              Log In
               <ArrowRight size={20} className="ml-2" />
-            </Link>
-            <Link
-              to="/auth/login"
-              className="btn-tactile btn-secondary px-8 py-5 text-lg"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/portal/login"
-              className="px-8 py-5 text-base font-bold text-secondary-600 bg-secondary-50 hover:bg-secondary-100/80 border-2 border-secondary-200 rounded-2xl transition-all"
-            >
-              View My Quote
             </Link>
           </div>
 

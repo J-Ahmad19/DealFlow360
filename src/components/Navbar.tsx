@@ -55,30 +55,13 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Desktop Action Buttons: [Get Started] [Sign In] [View My Quote] */}
+        {/* Desktop Action Buttons */}
         <div className="hidden md:flex items-center gap-2">
-          {/* Sign In -> internal login */}
           <Link
             to="/auth/login"
-            className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+            className="btn-tactile btn-primary px-5 py-2.5 text-sm rounded-xl"
           >
             Sign In
-          </Link>
-
-          {/* View My Quote -> customer portal login */}
-          <Link
-            to="/portal/login"
-            className="px-4 py-2 text-sm font-bold text-secondary-600 hover:text-secondary-700 hover:bg-secondary-50 rounded-xl transition-all border border-secondary-200"
-          >
-            View My Quote
-          </Link>
-
-          {/* Get Started -> internal signup */}
-          <Link
-            to="/auth/signup"
-            className="btn-tactile btn-primary px-5 py-2.5 text-sm rounded-xl ml-1"
-          >
-            Get Started
           </Link>
         </div>
 
@@ -117,23 +100,9 @@ export default function Navbar() {
                 <Link
                   to="/auth/login"
                   onClick={() => setMobileOpen(false)}
-                  className="block text-center px-4 py-3 text-sm font-bold text-slate-700 bg-slate-100 rounded-xl"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/portal/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="block text-center px-4 py-3 text-sm font-bold text-secondary-600 border border-secondary-200 rounded-xl"
-                >
-                  View My Quote
-                </Link>
-                <Link
-                  to="/auth/signup"
-                  onClick={() => setMobileOpen(false)}
                   className="btn-tactile btn-primary w-full text-center py-3 text-sm"
                 >
-                  Get Started
+                  Sign In
                 </Link>
               </div>
             </div>

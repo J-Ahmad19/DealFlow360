@@ -1,9 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import AppLayout from './pages/app/AppLayout';
 import PortalLogin from './pages/portal/PortalLogin';
+import PortalSignup from './pages/portal/PortalSignup';
 import PortalVerify from './pages/portal/PortalVerify';
 import PortalDashboard from './pages/portal/PortalDashboard';
 import { AuthProvider, useAuth, type UserRole } from './contexts/AuthContext';
@@ -59,6 +59,12 @@ function PortalProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RedirectLegacyQuotationsRoute() {
+  const { id } = useParams();
+
+  return <Navigate to={id ? `/app/quotations/${id}` : '/app/quotations'} replace />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -69,11 +75,17 @@ export default function App() {
 
           {/* Internal Authentication Routes */}
           <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/signup" element={<Signup />} />
+          <Route path="/auth/signup" element={<Navigate to="/auth/login" replace />} />
 
           {/* Customer Portal Authentication Routes */}
           <Route path="/portal/login" element={<PortalLogin />} />
+          <Route path="/portal/signup" element={<PortalSignup />} />
           <Route path="/portal/verify" element={<PortalVerify />} />
+
+          {/* Legacy quotation URLs that were previously used without the /app prefix */}
+          <Route path="/quotations" element={<Navigate to="/app/quotations" replace />} />
+          <Route path="/quotations/new" element={<Navigate to="/app/quotations/new" replace />} />
+          <Route path="/quotations/:id" element={<RedirectLegacyQuotationsRoute />} />
 
           {/* Internal Protected Application Workspace */}
           <Route
@@ -97,7 +109,7 @@ export default function App() {
 
           {/* Legacy & Shortcut Redirects */}
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
+          <Route path="/signup" element={<Navigate to="/auth/login" replace />} />
           <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
 
           {/* Catch-all fallback */}

@@ -95,7 +95,7 @@ export const QuotationsService = {
     if (data.title) quotationData.title = data.title;
     if (data.customerId) quotationData.customerId = data.customerId;
 
-    if (data.lines) {
+    if (data.lines && data.lines.length > 0) {
       processedLines = [];
       let overallSubtotal = 0, overallTotal = 0, overallTax = 0, overallDiscountAmt = 0;
 
@@ -107,6 +107,7 @@ export const QuotationsService = {
         const quantity = line.quantity;
         const discountPercent = line.discount;
         const taxRate = 10;
+        
         const baseSubtotal = unitPrice * quantity;
         const discountAmount = Math.round((baseSubtotal * discountPercent) / 100);
         const subtotal = baseSubtotal - discountAmount;
@@ -128,7 +129,6 @@ export const QuotationsService = {
 
     await QuotationsRepository.update(id, quotationData, processedLines);
 
-    // Detect whether discount changed for more specific audit action
     const discountChanged = data.lines && existing.discount !== quotationData.discount;
     await AuditService.log({
       actorId,

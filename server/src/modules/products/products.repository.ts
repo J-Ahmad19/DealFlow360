@@ -1,7 +1,7 @@
 import { db } from '../../db/client.js';
 import { products, productCategories } from '../../db/schema/dealflow.js';
-import { eq } from 'drizzle-orm';
 import { CreateProductCategoryDto, UpdateProductCategoryDto, CreateProductDto, UpdateProductDto } from './products.types.js';
+import { eq, asc } from 'drizzle-orm';
 
 export const ProductsRepository = {
   createCategory: async (data: CreateProductCategoryDto) => {

@@ -16,7 +16,7 @@ import { approvalRulesRoutes } from '../modules/approvalRules/approvalRules.rout
 import { quotationsRoutes } from '../modules/quotations/quotations.routes.js';
 import recommendationsRoutes from '../modules/recommendations/recommendations.routes.js';
 import fulfillmentRoutes from '../modules/fulfillment/fulfillment.routes.js';
-import { ordersRoutes, subscriptionsRoutes } from '../modules/billing/billing.routes.js';
+import { ordersRoutes, subscriptionsRoutes, billingRoutes } from '../modules/billing/billing.routes.js';
 import { portalRoutes } from '../modules/portal/portal.routes.js';
 import { dealHealthRoutes } from '../modules/dealHealth/deal-health.routes.js';
 import { dashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
@@ -35,6 +35,7 @@ apiRouter.use('/quotations', quotationsRoutes);
 apiRouter.use('/quotations/:id', recommendationsRoutes);
 apiRouter.use('/quotations/:id', fulfillmentRoutes);
 apiRouter.use('/orders', ordersRoutes);
+apiRouter.use('/billing', billingRoutes);
 apiRouter.use('/subscriptions', subscriptionsRoutes);
 apiRouter.use('/portal', portalRoutes);
 apiRouter.use('/deal-health', dealHealthRoutes);

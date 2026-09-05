@@ -27,6 +27,7 @@ const COLUMNS = [
   { id: 'confirmed', title: 'Confirmed' }
 ];
 
+// Maps backend database enum statuses into the 4 visual Kanban columns
 const STATUS_MAP: Record<string, string> = {
   'draft': 'draft',
   'pending_approval': 'pending_approval',
@@ -35,6 +36,14 @@ const STATUS_MAP: Record<string, string> = {
   'confirmed': 'confirmed',
   'approved': 'confirmed',
   'fulfillment': 'confirmed',
+};
+
+// Maps a visual column drop back into a strict backend database enum
+const BOARD_TO_BACKEND_STATUS: Record<string, string> = {
+  'draft': 'draft',
+  'pending_approval': 'pending_approval',
+  'under_negotiation': 'under_negotiation',
+  'confirmed': 'confirmed',
 };
 
 export default function QuotationsList() {
@@ -47,22 +56,26 @@ export default function QuotationsList() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  useEffect(() => {
-    async function loadQuotations() {
-      try {
-        const data = await apiFetch('/quotations');
-        // Map any complex statuses to our 4 simple columns
-        const normalizedData = data.map((q: any) => ({
-          ...q,
-          kanbanStatus: STATUS_MAP[q.status] || 'draft'
-        }));
-        setQuotations(normalizedData);
-      } catch (err) {
-        console.error('Failed to load quotations:', err);
-      } finally {
-        setLoading(false);
-      }
+  const normalizeQuotations = (data: any[]) =>
+    data.map((q: any) => ({
+      ...q,
+      status: q.status || 'draft',
+      kanbanStatus: STATUS_MAP[q.status] || q.kanbanStatus || 'draft',
+    }));
+
+  const loadQuotations = async () => {
+    try {
+      const response = await apiFetch('/quotations');
+      const payload = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+      setQuotations(normalizeQuotations(payload));
+    } catch (err) {
+      console.error('Failed to load quotations:', err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadQuotations();
   }, []);
 
@@ -100,7 +113,7 @@ export default function QuotationsList() {
     }
 
     // Dropping a quote over a column
-    const isOverAColumn = overId === 'draft' || overId === 'pending_approval' || overId === 'under_negotiation' || overId === 'confirmed';
+    const isOverAColumn = COLUMNS.some(col => col.id === overId);
     if (isActiveQuotation && isOverAColumn) {
       setQuotations((items) => {
         const activeIndex = items.findIndex((q) => q.id === activeId);
@@ -119,23 +132,55 @@ export default function QuotationsList() {
     const { active, over } = event;
     if (!over) return;
 
-    // Capture the final state after all drag-over updates
     const activeQuote = quotations.find((q) => q.id === active.id);
     if (!activeQuote) return;
 
-    // Use the dedicated PATCH /status endpoint — not PATCH /:id which only accepts title/customerId/lines
+    const targetBoardStatus = String(over.id);
+    const nextBackendStatus = BOARD_TO_BACKEND_STATUS[targetBoardStatus] || BOARD_TO_BACKEND_STATUS[activeQuote.kanbanStatus];
+
+    if (!nextBackendStatus) return;
+
+    const previousDbStatus = activeQuote.status;
+    const previousBoardStatus = STATUS_MAP[previousDbStatus] || 'draft';
+
+    setQuotations((prev) =>
+      prev.map((q) =>
+        q.id === activeQuote.id
+          ? { ...q, kanbanStatus: targetBoardStatus, status: nextBackendStatus }
+          : q
+      )
+    );
+
     try {
-      await apiFetch(`/quotations/${activeQuote.id}/status`, {
+      const response = await apiFetch(`/quotations/${activeQuote.id}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: activeQuote.kanbanStatus })
+        body: JSON.stringify({ status: nextBackendStatus }),
       });
+
+      const updatedQuote = response?.data || response;
+      if (updatedQuote?.status) {
+        const refreshedStatus = updatedQuote.status;
+        setQuotations((prev) =>
+          prev.map((q) =>
+            q.id === activeQuote.id
+              ? {
+                  ...q,
+                  ...updatedQuote,
+                  status: refreshedStatus,
+                  kanbanStatus: STATUS_MAP[refreshedStatus] || targetBoardStatus,
+                }
+              : q
+          )
+        );
+      } else {
+        await loadQuotations();
+      }
     } catch (err: any) {
       console.error('Failed to update quotation status:', err?.message ?? err);
-      // Revert the optimistic update back to server state on error
       setQuotations((prev) =>
         prev.map((q) =>
           q.id === activeQuote.id
-            ? { ...q, kanbanStatus: STATUS_MAP[q.status] ?? 'draft' }
+            ? { ...q, kanbanStatus: previousBoardStatus, status: previousDbStatus }
             : q
         )
       );
@@ -157,7 +202,7 @@ export default function QuotationsList() {
         </div>
         <div className="flex items-center gap-3">
           <Link
-            to="/app/quotations?action=new"
+            to="/app/quotations/new"
             className="btn-tactile btn-primary px-5 py-2.5 text-xs flex items-center gap-2 bg-brand-500 hover:bg-brand-400 text-white rounded-xl shadow-lg shadow-brand-500/20"
           >
             <Plus size={16} />
