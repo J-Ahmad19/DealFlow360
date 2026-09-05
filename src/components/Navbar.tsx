@@ -33,8 +33,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-2xl bg-brand-500 flex items-center justify-center border-b-4 border-brand-600 group-hover:border-b-0 group-hover:translate-y-1 transition-all duration-150">
-            <span className="text-white font-display font-black text-base">D</span>
+          <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center border-b-4 border-slate-200 group-hover:border-b-0 group-hover:translate-y-1 transition-all duration-150 p-1">
+            <img src="/logo.png" alt="DealFlow360 Logo" className="w-full h-full object-contain" />
           </div>
           <span className="font-display font-black text-xl text-slate-900 tracking-tight">
             Deal<span className="text-brand-500">Flow</span>360
