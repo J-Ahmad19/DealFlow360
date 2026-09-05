@@ -39,8 +39,32 @@ export function authorizeResource(policy: ResourcePolicy) {
       }
 
       next();
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export function authorizeCustomerResource(policy: (customer: any, resourceId: string, body?: any) => Promise<boolean>) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customer = (req as any).customer;
+
+      if (!customer || !customer.companyId) {
+        throw new UnauthorizedError('Customer authentication required for resource authorization');
+      }
+
+      const resourceId = req.params.id; // Convention: resource ID is in req.params.id
+      
+      const isAllowed = await policy(customer, resourceId, req.body);
+      
+      if (!isAllowed) {
+        throw new ForbiddenError('You do not have permission to view this quotation');
+      }
+
+      next();
+    } catch (error) {
+      next(error);
     }
   };
 }

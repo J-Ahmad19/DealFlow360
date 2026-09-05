@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../../../config/index.js';
-import { AuthRepository } from '../../../modules/auth/auth.repository.js';
-import { AppError } from '../../errors/AppError.js';
-import { JwtPayload } from '../../../modules/auth/auth.types.js';
+import { config } from '../../config/index.js';
+import { AuthRepository } from '../../modules/auth/auth.repository.js';
+import { AppError } from '../errors/AppError.js';
+import { JwtPayload } from '../../modules/auth/auth.types.js';
 
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {

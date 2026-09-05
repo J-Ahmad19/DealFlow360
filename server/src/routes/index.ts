@@ -8,12 +8,14 @@
 import { Router } from 'express';
 import healthRouter from './health.js';
 import { authRoutes } from '../modules/auth/auth.routes.js';
+import { portalAuthRoutes } from '../modules/portalAuth/portalAuth.routes.js';
 
 const apiRouter = Router();
 
 // ── v1 routes ─────────────────────────────────────────────────────────────────
 apiRouter.use('/health', healthRouter);
 apiRouter.use('/auth', authRoutes);
+apiRouter.use('/portal/auth', portalAuthRoutes);
 // apiRouter.use('/deals', dealsRouter);
 // apiRouter.use('/users', usersRouter);
 

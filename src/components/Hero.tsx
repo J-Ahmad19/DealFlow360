@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ArrowRight, Play, HeartPulse, Clock, BarChart3, ClipboardList } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -99,8 +100,8 @@ export default function Hero() {
             transition={{ duration: 0.6, delay: 0.65 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <a
-              href="#cta"
+            <Link
+              to="/signup"
               className="btn-tactile btn-primary px-8 py-4 text-lg"
             >
               Get Started Free
@@ -108,7 +109,7 @@ export default function Hero() {
                 size={20}
                 className="ml-2"
               />
-            </a>
+            </Link>
             <a
               href="#workflow"
               className="btn-tactile btn-secondary px-8 py-4 text-lg"

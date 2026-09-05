@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Lock, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function CTA() {
   return (
@@ -36,19 +37,19 @@ export default function CTA() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <a
-              href="#"
+            <Link
+              to="/signup"
               className="btn-tactile btn-primary px-10 py-5 text-lg"
             >
               Start Free Trial
               <ArrowRight size={20} className="ml-2" />
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              to="/login"
               className="btn-tactile btn-secondary px-10 py-5 text-lg"
             >
-              Talk to Sales
-            </a>
+              Log in to Account
+            </Link>
           </div>
 
           {/* Trust indicators */}

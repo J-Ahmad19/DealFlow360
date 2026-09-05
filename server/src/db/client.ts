@@ -9,6 +9,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import { config } from '../config/index.js';
 import { logger } from '../core/logging/logger.js';
+import * as schema from './schema/index.js';
 
 const { Pool } = pg;
 
@@ -29,8 +30,7 @@ pool.on('error', (err) => {
 
 // Schema map will be extended as modules are added:
 // import * as schema from './schema/index.js';
-// export const db = drizzle(pool, { schema });
-export const db = drizzle(pool);
+export const db = drizzle(pool, { schema });
 
 // ─── Health check helper ──────────────────────────────────────────────────────
 

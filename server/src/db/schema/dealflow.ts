@@ -61,6 +61,21 @@ export const refreshTokens = pgTable(
   ]
 );
 
+export const portalTokens = pgTable(
+  'portal_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'cascade' }).notNull(),
+    tokenHash: varchar('token_hash', { length: 255 }).notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    usedAt: timestamp('used_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('portal_tokens_contact_idx').on(table.contactId),
+  ]
+);
+
 export const companies = pgTable(
   'companies',
   {

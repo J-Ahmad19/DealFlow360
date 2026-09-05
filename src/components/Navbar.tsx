@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -56,18 +57,24 @@ export default function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <a
-            href="#cta"
+          <Link
+            to="/login"
             className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors"
           >
             Log In
-          </a>
-          <a
-            href="#cta"
+          </Link>
+          <Link
+            to="/signup"
             className="btn-tactile btn-primary px-5 py-2.5 text-sm rounded-xl"
           >
             Get Started Free
-          </a>
+          </Link>
+          <Link
+            to="/portal/login"
+            className="px-4 py-2 text-sm font-bold text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-xl transition-all"
+          >
+            Customer Portal
+          </Link>
         </div>
 
         {/* Mobile Toggle */}
@@ -102,18 +109,24 @@ export default function Navbar() {
                 </a>
               ))}
               <div className="pt-4 border-t-2 border-slate-100 space-y-3">
-                <a
-                  href="#cta"
+                <Link
+                  to="/login"
                   className="block text-center px-4 py-3 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   Log In
-                </a>
-                <a
-                  href="#cta"
+                </Link>
+                <Link
+                  to="/signup"
                   className="btn-tactile btn-primary w-full text-center py-3 text-sm"
                 >
                   Get Started Free
-                </a>
+                </Link>
+                <Link
+                  to="/portal/login"
+                  className="block text-center px-4 py-3 text-sm font-bold text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-xl transition-all"
+                >
+                  Customer Portal
+                </Link>
               </div>
             </div>
           </motion.div>
