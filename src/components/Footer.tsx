@@ -7,19 +7,20 @@ const footerLinks = {
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-950 text-slate-400 pt-20 pb-8">
+    <footer className="bg-slate-900 text-slate-400 pt-20 pb-8">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-16">
+          {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
-            <a href="#" className="flex items-center gap-2.5 mb-5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
-                <span className="text-white font-display font-bold text-sm">D</span>
+            <a href="#" className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-brand-500 flex items-center justify-center border-b-4 border-brand-600">
+                <span className="text-white font-display font-black text-base">D</span>
               </div>
-              <span className="font-display font-bold text-xl text-white tracking-tight">
+              <span className="font-display font-black text-xl text-white tracking-tight">
                 Deal<span className="text-brand-400">Flow</span>360
               </span>
             </a>
-            <p className="text-sm text-slate-500 leading-relaxed mb-5 max-w-[240px]">
+            <p className="text-sm font-bold text-slate-500 leading-relaxed mb-6 max-w-[240px]">
               The intelligent sales operations platform that manages the complete deal lifecycle.
             </p>
             <div className="flex items-center gap-3">
@@ -27,25 +28,27 @@ export default function Footer() {
                 <a
                   key={idx}
                   href="#"
-                  className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors"
+                  aria-label={social}
+                  className="w-10 h-10 rounded-[14px] bg-slate-800 hover:bg-brand-500 border-2 border-slate-700 hover:border-brand-600 flex items-center justify-center transition-all duration-200 font-black text-xs text-slate-400 hover:text-white"
                 >
-                  <span className="text-xs font-bold text-slate-400">{social}</span>
+                  {social}
                 </a>
               ))}
             </div>
           </div>
 
+          {/* Link columns */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4 className="font-display text-sm font-bold text-white mb-4 tracking-wide">
+              <h4 className="font-display text-sm font-black text-white mb-5 uppercase tracking-widest">
                 {category}
               </h4>
-              <ul className="space-y-2.5">
+              <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link}>
                     <a
                       href="#"
-                      className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+                      className="text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors"
                     >
                       {link}
                     </a>
@@ -56,20 +59,17 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-600">
+        {/* Bottom bar */}
+        <div className="border-t-2 border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm font-bold text-slate-600">
             © {new Date().getFullYear()} DealFlow360. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-slate-600 hover:text-slate-400 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="text-sm text-slate-600 hover:text-slate-400 transition-colors">
-              Terms of Service
-            </a>
-            <a href="#" className="text-sm text-slate-600 hover:text-slate-400 transition-colors">
-              Cookie Settings
-            </a>
+            {['Privacy Policy', 'Terms of Service', 'Cookie Settings'].map((item) => (
+              <a key={item} href="#" className="text-sm font-bold text-slate-600 hover:text-brand-400 transition-colors">
+                {item}
+              </a>
+            ))}
           </div>
         </div>
       </div>

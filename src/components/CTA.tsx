@@ -1,75 +1,78 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Zap, Lock, RefreshCw } from 'lucide-react';
 
 export default function CTA() {
   return (
-    <section id="cta" className="py-24 lg:py-32 bg-slate-50 relative overflow-hidden">
+    <section id="cta" className="py-24 lg:py-32 bg-white relative overflow-hidden">
+      {/* Subtle ambient glow */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-brand-400/5 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-brand-400/8 blur-3xl" />
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-secondary-400/5 blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 relative">
+      <div className="max-w-4xl mx-auto px-6 relative text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-4xl mx-auto text-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full clay-accent mb-8">
-            <Sparkles size={14} className="text-brand-500" />
-            <span className="text-sm font-medium text-brand-700">
-              Free 14-day trial • No credit card required
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border-2 border-brand-200 border-b-4 mb-10">
+            <span className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse" />
+            <span className="text-sm font-black text-brand-600 uppercase tracking-widest">
+              Free 14-day trial · No credit card required
             </span>
           </div>
 
-          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-950 leading-tight mb-6">
+          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] mb-6">
             Ready to transform your{' '}
             <span className="gradient-text">sales operations</span>?
           </h2>
 
-          <p className="text-lg sm:text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto mb-10">
+          <p className="text-lg sm:text-xl font-bold text-slate-500 leading-relaxed max-w-2xl mx-auto mb-12">
             Join 500+ companies that closed more deals, faster, with DealFlow360.
-            Set up in under 5 minutes with no credit card required.
+            Set up in under 5 minutes.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <a
               href="#"
-              className="group inline-flex items-center gap-2.5 px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl shadow-xl shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-300"
+              className="btn-tactile btn-primary px-10 py-5 text-lg"
             >
               Start Free Trial
-              <ArrowRight
-                size={18}
-                className="group-hover:translate-x-1 transition-transform"
-              />
+              <ArrowRight size={20} className="ml-2" />
             </a>
             <a
               href="#"
-              className="inline-flex items-center gap-2.5 px-8 py-4 text-base font-semibold text-slate-700 bg-white rounded-2xl border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+              className="btn-tactile btn-secondary px-10 py-5 text-lg"
             >
               Talk to Sales
             </a>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
+          {/* Trust indicators */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
             {[
-              { label: 'Setup in 5 minutes', icon: '⚡' },
-              { label: 'No credit card required', icon: '🔒' },
-              { label: 'Cancel anytime', icon: '✨' },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 + idx * 0.1 }}
-                className="flex items-center justify-center gap-2 text-sm text-slate-500"
-              >
-                <span>{item.icon}</span>
-                {item.label}
-              </motion.div>
-            ))}
+              { label: 'Setup in 5 minutes', icon: Zap, color: 'text-warning-500', bg: 'bg-amber-50 border-amber-100' },
+              { label: 'No credit card needed', icon: Lock, color: 'text-brand-500', bg: 'bg-brand-50 border-brand-100' },
+              { label: 'Cancel anytime', icon: RefreshCw, color: 'text-secondary-400', bg: 'bg-secondary-50 border-secondary-100' },
+            ].map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + idx * 0.1 }}
+                  className={`flex items-center justify-center gap-3 px-5 py-4 rounded-2xl border-2 ${item.bg} font-bold text-sm text-slate-600`}
+                >
+                  <Icon size={18} className={item.color} strokeWidth={2.5} />
+                  {item.label}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </div>
