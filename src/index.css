@@ -1,43 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #fff8f0;
-  --color-brand-100: #fff0db;
-  --color-brand-200: #ffdcb3;
-  --color-brand-300: #ffc480;
-  --color-brand-400: #ffa533;
-  --color-brand-500: #ff8c00;
-  --color-brand-600: #e67e00;
-  --color-brand-700: #cc6e00;
-  --color-brand-800: #a35800;
-  --color-brand-900: #7a4200;
+  --color-brand-50: #e8f9db;
+  --color-brand-100: #c6f1a8;
+  --color-brand-200: #a2e873;
+  --color-brand-300: #7cde3c;
+  --color-brand-400: #5ed614;
+  --color-brand-500: #58CC02; /* Primary */
+  --color-brand-600: #46a302;
+  --color-brand-700: #357a01;
+  --color-brand-800: #235201;
+  --color-brand-900: #122900;
 
-  --color-warm-50: #fffcf5;
-  --color-warm-100: #fff7e6;
-  --color-warm-200: #ffedcc;
-  --color-warm-300: #ffe0a3;
-  --color-warm-400: #ffd066;
-  --color-warm-500: #ffc233;
-  --color-warm-600: #e6a800;
-  --color-warm-700: #b38300;
+  --color-secondary-50: #f7e6ff;
+  --color-secondary-100: #ebccff;
+  --color-secondary-200: #dfb3ff;
+  --color-secondary-300: #d399ff;
+  --color-secondary-400: #ce82ff; /* Secondary */
+  --color-secondary-500: #a568cc;
+  --color-secondary-600: #7c4e99;
+  --color-secondary-700: #533466;
+  --color-secondary-800: #291a33;
+  --color-secondary-900: #140d1a;
 
-  --color-slate-950: #0a0e1a;
-  --color-slate-900: #111827;
-  --color-slate-800: #1e293b;
-  --color-slate-700: #334155;
-  --color-slate-600: #475569;
-  --color-slate-500: #64748b;
-  --color-slate-400: #94a3b8;
-  --color-slate-300: #cbd5e1;
-  --color-slate-200: #e2e8f0;
-  --color-slate-100: #f1f5f9;
-  --color-slate-50: #f8fafc;
+  --color-success-500: #58CC02;
+  --color-warning-500: #FFC800;
+  --color-danger-500: #FF4B4B;
 
-  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --color-text-main: #3C3C3C;
+  
+  --font-display: 'Nunito', system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, sans-serif;
 }
-
-
 
 html {
   scroll-behavior: smooth;
@@ -47,8 +41,8 @@ html {
 
 body {
   font-family: var(--font-body);
-  background: #fafbfc;
-  color: var(--color-slate-800);
+  background: #f0f2f5;
+  color: var(--color-text-main);
   overflow-x: hidden;
 }
 
@@ -62,80 +56,98 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-slate-100);
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-slate-300);
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-slate-400);
+  background: #94a3b8;
 }
 
-.glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+/* Tactile 3D Buttons */
+.btn-tactile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom-width: 4px;
+  transition: all 0.15s ease;
 }
 
-.glass-dark {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.btn-tactile:active {
+  transform: translateY(4px);
+  border-bottom-width: 0px;
+  margin-top: 4px;
 }
 
-.clay {
-  background: linear-gradient(145deg, #ffffff, #f0f0f0);
-  box-shadow:
-    8px 8px 16px rgba(0, 0, 0, 0.06),
-    -8px -8px 16px rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+.btn-primary {
+  background-color: var(--color-brand-500);
+  color: white;
+  border-color: var(--color-brand-600);
 }
 
-.clay-accent {
-  background: linear-gradient(145deg, #fff8f0, #fff0db);
-  box-shadow:
-    8px 8px 16px rgba(255, 140, 0, 0.08),
-    -8px -8px 16px rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 200, 130, 0.3);
+.btn-primary:hover {
+  background-color: #5edf02;
+}
+
+.btn-secondary {
+  background-color: white;
+  color: var(--color-text-main);
+  border: 2px solid #e5e7eb;
+  border-bottom: 4px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+  background-color: #f9fafb;
+}
+
+.btn-secondary:active {
+  border-bottom: 0px solid #e5e7eb;
+}
+
+/* Tactile Cards */
+.card-tactile {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  border: 2px solid #e5e7eb;
+  border-bottom-width: 4px;
+  transition: all 0.2s ease;
+}
+
+.card-tactile:hover {
+  transform: translateY(-4px);
+  border-bottom-width: 8px;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600));
+  background: linear-gradient(135deg, var(--color-brand-500), var(--color-secondary-400));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .hero-gradient {
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 140, 0, 0.12), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 50%, rgba(255, 200, 130, 0.08), transparent),
-    linear-gradient(180deg, #fafbfc 0%, #fff8f0 50%, #fafbfc 100%);
+  background: 
+    radial-gradient(circle at top right, rgba(206, 130, 255, 0.1), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(88, 204, 2, 0.1), transparent 40%),
+    #ffffff;
 }
 
 .section-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-slate-200), transparent);
+  height: 2px;
+  background: #e5e7eb;
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-12px); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(255, 140, 0, 0.15); }
-  50% { box-shadow: 0 0 40px rgba(255, 140, 0, 0.3); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 .animate-float {
@@ -144,16 +156,6 @@ body {
 
 .animate-float-delayed {
   animation: float 6s ease-in-out infinite 2s;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
-}
-
-.shimmer-bg {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
