@@ -117,7 +117,7 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
             body: JSON.stringify({ email, password }),
           });
           loginUser(res.user);
-          navigate('/dashboard');
+          navigate('/app/dashboard');
         } else {
           const targetCompany = companyName === 'custom' ? customCompany : companyName;
           const res = await apiFetch('/auth/signup', {
@@ -130,7 +130,7 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
             }),
           });
           loginUser(res.user);
-          navigate('/dashboard');
+          navigate('/app/dashboard');
         }
       }
     } catch (err: any) {

@@ -94,28 +94,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function initAuth() {
       try {
         setLoading(true);
-        // Always probe internal session
+        // Probe internal session — set null if no valid cookie exists
         try {
           const res = await apiFetch('/auth/me');
           if (res?.user) {
             setUser(res.user);
           } else {
-            setUser({
-              id: 'usr-demo-001',
-              email: 'sales.rep@dealflow360.io',
-              fullName: 'Alex Vance',
-              role: 'sales_rep',
-              status: 'active',
-            });
+            setUser(null);
           }
         } catch {
-          setUser({
-            id: 'usr-demo-001',
-            email: 'sales.rep@dealflow360.io',
-            fullName: 'Alex Vance',
-            role: 'sales_rep',
-            status: 'active',
-          });
+          // No session cookie → unauthenticated
+          setUser(null);
         }
 
         // Only probe portal session when user is visiting portal-specific routes.
