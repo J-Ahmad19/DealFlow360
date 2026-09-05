@@ -442,7 +442,7 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
               )}
             </div>
           )}
-          {/* Role Selector — only sales_rep on public signup; admins created by system */}
+          {/* Role Selector — allowing all roles for testing RBAC */}
           {mode === 'signup' && accountType === 'internal' && (
             <div>
               <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
@@ -451,6 +451,9 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
               <div className="grid grid-cols-1 gap-2">
                 {[
                   { value: 'sales_rep', label: 'Sales Representative', desc: 'Create quotes, manage deals' },
+                  { value: 'sales_manager', label: 'Sales Manager', desc: 'Review and approve quotations' },
+                  { value: 'finance', label: 'Finance & Ops', desc: 'Manage billing and fulfillment' },
+                  { value: 'admin', label: 'System Admin', desc: 'Configure platform settings' },
                 ].map((r) => (
                   <button
                     key={r.value}
@@ -475,7 +478,7 @@ export default function AuthCard({ initialMode = 'login' }: AuthCardProps) {
                 ))}
               </div>
               <p className="mt-2 text-xs text-slate-400 font-medium">
-                💡 Manager, Finance &amp; Admin roles are assigned by your organization admin after signup.
+                💡 For testing purposes, you can select any role to experience the RBAC features.
               </p>
             </div>
           )}
