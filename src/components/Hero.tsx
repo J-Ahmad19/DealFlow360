@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
-import { ArrowRight, Play, HeartPulse, Clock, BarChart3, ClipboardList } from 'lucide-react';
+import { ArrowRight, HeartPulse, Clock, BarChart3, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Hero() {
@@ -101,24 +101,27 @@ export default function Hero() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link
-              to="/signup"
+              to="/auth/signup"
               className="btn-tactile btn-primary px-8 py-4 text-lg"
             >
-              Get Started Free
+              Get Started
               <ArrowRight
                 size={20}
                 className="ml-2"
               />
             </Link>
-            <a
-              href="#workflow"
+            <Link
+              to="/auth/login"
               className="btn-tactile btn-secondary px-8 py-4 text-lg"
             >
-              <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center mr-2">
-                <Play size={12} className="text-brand-600 ml-0.5" />
-              </div>
-              View Demo
-            </a>
+              Sign In
+            </Link>
+            <Link
+              to="/portal/login"
+              className="px-6 py-4 text-base font-bold text-secondary-600 hover:text-secondary-700 bg-secondary-50 hover:bg-secondary-100/80 rounded-2xl border-2 border-secondary-200 transition-all"
+            >
+              View My Quote
+            </Link>
           </motion.div>
 
           <motion.div

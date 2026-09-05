@@ -25,7 +25,7 @@ import { notFound } from './core/middleware/notFound.js';
 import { errorHandler } from './core/middleware/errorHandler.js';
 import { closeDbPool } from './db/client.js';
 import apiRouter from './routes/index.js';
-import { startDealHealthScheduler, stopDealHealthScheduler } from './modules/dealHealth/deal-health.scheduler.js';
+import { startJobScheduler, stopJobScheduler } from './jobs/index.js';
 
 // ─── Create app ───────────────────────────────────────────────────────────────
 
@@ -75,8 +75,8 @@ const server = app.listen(config.PORT, () => {
     { port: config.PORT, env: config.NODE_ENV },
     `🚀  DealFlow360 API running on http://localhost:${config.PORT.toString()}/api/v1`,
   );
-  // Start background deal health scanner (non-blocking)
-  startDealHealthScheduler();
+  // Start background job workers (billing, deal health, recommendations, notifications)
+  startJobScheduler();
 });
 
 // ─── Graceful shutdown ────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ async function shutdown(signal: string): Promise<void> {
 
   server.close(async () => {
     logger.info('HTTP server closed');
-    stopDealHealthScheduler();
+    stopJobScheduler();
     await closeDbPool();
     logger.info('All connections drained. Goodbye.');
     process.exit(0);

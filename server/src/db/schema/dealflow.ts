@@ -47,6 +47,7 @@ export const billingIntervalEnum = pgEnum('billing_interval', ['monthly', 'quart
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'canceled']);
 export const paymentTypeEnum = pgEnum('payment_type', ['charge', 'refund']);
 export const fulfillmentStatusEnum = pgEnum('fulfillment_status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled']);
+export const notificationStatusEnum = pgEnum('notification_status', ['pending', 'sent', 'failed']);
 
 // ─── Core Tables ──────────────────────────────────────────────────────────────
 
@@ -539,5 +540,28 @@ export const auditLogs = pgTable(
     
     // 22. Audit actor: actor_id + created_at DESC
     index('audit_actor_idx').on(table.actorId, table.createdAt.desc()),
+  ]
+);
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipientId: uuid('recipient_id').references(() => users.id),
+    type: varchar('type', { length: 100 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    message: text('message').notNull(),
+    status: notificationStatusEnum('status').default('pending').notNull(),
+    sentAt: timestamp('sent_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    // 23. Worker query: status = 'pending' + created_at
+    index('notifications_worker_idx')
+      .on(table.createdAt)
+      .where(sql`${table.status} = 'pending'`),
+    index('notifications_recipient_idx').on(table.recipientId, table.createdAt.desc()),
   ]
 );
