@@ -28,6 +28,8 @@ const envSchema = z.object({
     .string()
     .url('DATABASE_URL must be a valid PostgreSQL connection string'),
 
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
+
   // Redis is optional in dev — leave blank to disable
   REDIS_URL: z.string().url().optional().or(z.literal('')),
   REDIS_TOKEN: z.string().optional(),

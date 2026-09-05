@@ -7,14 +7,13 @@
  */
 import { Router } from 'express';
 import healthRouter from './health.js';
+import { authRoutes } from '../modules/auth/auth.routes.js';
 
 const apiRouter = Router();
 
 // ── v1 routes ─────────────────────────────────────────────────────────────────
 apiRouter.use('/health', healthRouter);
-
-// Future modules — uncomment as they are implemented:
-// apiRouter.use('/auth',  authRouter);
+apiRouter.use('/auth', authRoutes);
 // apiRouter.use('/deals', dealsRouter);
 // apiRouter.use('/users', usersRouter);
 

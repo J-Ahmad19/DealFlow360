@@ -5,7 +5,8 @@ CREATE TYPE "public"."entity_type" AS ENUM('quotation', 'deal', 'product', 'comp
 CREATE TYPE "public"."invoice_status" AS ENUM('draft', 'sent', 'paid', 'overdue');--> statement-breakpoint
 CREATE TYPE "public"."quotation_status" AS ENUM('open', 'negotiating', 'won', 'lost');--> statement-breakpoint
 CREATE TYPE "public"."severity" AS ENUM('low', 'medium', 'high', 'critical');--> statement-breakpoint
-CREATE TYPE "public"."user_role" AS ENUM('admin', 'manager', 'finance', 'user');--> statement-breakpoint
+CREATE TYPE "public"."user_role" AS ENUM('admin', 'sales_manager', 'finance', 'sales_rep');--> statement-breakpoint
+CREATE TYPE "public"."user_status" AS ENUM('active', 'inactive', 'suspended');--> statement-breakpoint
 CREATE TABLE "approvals" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"quotation_id" uuid NOT NULL,
@@ -139,6 +140,15 @@ CREATE TABLE "quotations" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "refresh_tokens" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"token_hash" varchar(255) NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"revoked_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "upsells" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"source_product_id" uuid NOT NULL,
@@ -149,7 +159,9 @@ CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"full_name" varchar(255) NOT NULL,
-	"role" "user_role" DEFAULT 'user' NOT NULL,
+	"password_hash" varchar(255),
+	"role" "user_role" DEFAULT 'sales_rep' NOT NULL,
+	"status" "user_status" DEFAULT 'active' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
@@ -172,6 +184,7 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_quotation_id_quotations_id_fk" FOREI
 ALTER TABLE "products" ADD CONSTRAINT "products_category_id_product_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."product_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quotations" ADD CONSTRAINT "quotations_customer_id_companies_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."companies"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quotations" ADD CONSTRAINT "quotations_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "upsells" ADD CONSTRAINT "upsells_source_product_id_products_id_fk" FOREIGN KEY ("source_product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "upsells" ADD CONSTRAINT "upsells_target_product_id_products_id_fk" FOREIGN KEY ("target_product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "approvals_queue_idx" ON "approvals" USING btree ("risk_score" DESC NULLS LAST) WHERE "approvals"."status" = 'pending';--> statement-breakpoint
@@ -198,5 +211,6 @@ CREATE INDEX "quotations_status_created_desc_idx" ON "quotations" USING btree ("
 CREATE INDEX "quotations_customer_created_desc_idx" ON "quotations" USING btree ("customer_id","created_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "quotations_stalled_scan_idx" ON "quotations" USING btree ("last_activity_at") WHERE "quotations"."status" IN ('open', 'negotiating');--> statement-breakpoint
 CREATE INDEX "quotations_reporting_idx" ON "quotations" USING btree ("created_at","owner_id","status");--> statement-breakpoint
+CREATE INDEX "refresh_tokens_user_idx" ON "refresh_tokens" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "upsells_source_product_idx" ON "upsells" USING btree ("source_product_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_email_idx" ON "users" USING btree ("email");

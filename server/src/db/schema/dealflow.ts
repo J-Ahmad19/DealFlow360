@@ -14,7 +14,8 @@ import {
 import { sql } from 'drizzle-orm';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
-export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'finance', 'user']);
+export const userRoleEnum = pgEnum('user_role', ['admin', 'sales_manager', 'finance', 'sales_rep']);
+export const userStatusEnum = pgEnum('user_status', ['active', 'inactive', 'suspended']);
 export const quotationStatusEnum = pgEnum('quotation_status', ['open', 'negotiating', 'won', 'lost']);
 export const approvalStatusEnum = pgEnum('approval_status', ['pending', 'approved', 'rejected']);
 export const backorderStatusEnum = pgEnum('backorder_status', ['pending', 'fulfilled', 'cancelled']);
@@ -31,7 +32,9 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     email: varchar('email', { length: 255 }).notNull().unique(),
     fullName: varchar('full_name', { length: 255 }).notNull(),
-    role: userRoleEnum('role').default('user').notNull(),
+    passwordHash: varchar('password_hash', { length: 255 }),
+    role: userRoleEnum('role').default('sales_rep').notNull(),
+    status: userStatusEnum('status').default('active').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -40,6 +43,21 @@ export const users = pgTable(
   },
   (table) => [
     uniqueIndex('users_email_idx').on(table.email),
+  ]
+);
+
+export const refreshTokens = pgTable(
+  'refresh_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    tokenHash: varchar('token_hash', { length: 255 }).notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    revokedAt: timestamp('revoked_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('refresh_tokens_user_idx').on(table.userId),
   ]
 );
 

@@ -16,6 +16,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 import { config } from './config/index.js';
 import { logger } from './core/logging/logger.js';
@@ -32,6 +33,7 @@ const app = express();
 // ─── Security headers ─────────────────────────────────────────────────────────
 
 app.use(helmet());
+app.use(cookieParser());
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 
