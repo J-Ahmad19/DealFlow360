@@ -1,185 +1,164 @@
 import { useState } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
-import { useAuth, type UserRole } from '../../contexts/AuthContext';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import SidebarNav from '../../components/app/SidebarNav';
+import TopNav from '../../components/app/TopNav';
 import { PermissionGuard } from '../../components/auth/PermissionGuard';
 import Dashboard from '../Dashboard';
-import {
-  LayoutDashboard,
-  FileText,
-  CheckSquare,
-  Truck,
-  Repeat,
-  Receipt,
-  HeartPulse,
-  BarChart3,
-  Package,
-  Users,
-  LogOut,
-  ChevronDown
-} from 'lucide-react';
-
-const roleBadgeColors: Record<UserRole, string> = {
-  admin: 'bg-red-500/10 text-red-700 border-red-200',
-  sales_manager: 'bg-amber-500/10 text-amber-700 border-amber-200',
-  finance: 'bg-blue-500/10 text-blue-700 border-blue-200',
-  sales_rep: 'bg-brand-500/10 text-brand-700 border-brand-200',
-};
-
-const roleDisplayNames: Record<UserRole, string> = {
-  admin: 'Administrator',
-  sales_manager: 'Sales Manager',
-  finance: 'Finance & Ops',
-  sales_rep: 'Sales Representative',
-};
+import QuotationsPage from './QuotationsPage';
+import PipelinePage from './PipelinePage';
+import ApprovalsPage from './ApprovalsPage';
+import FulfillmentPage from './FulfillmentPage';
+import BillingPage from './BillingPage';
+import SubscriptionsPage from './SubscriptionsPage';
+import CustomersPage from './CustomersPage';
+import ProductsPage from './ProductsPage';
+import ReportsPage from './ReportsPage';
+import SettingsPage from './SettingsPage';
+import { ShieldAlert } from 'lucide-react';
 
 export default function AppLayout() {
-  const { user, logoutUser } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [profileOpen, setProfileOpen] = useState(false);
-
-  const handleLogout = async () => {
-    await logoutUser();
-    navigate('/auth/login');
-  };
-
-  const navItems = [
-    { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, permission: 'QUOTATION_READ' },
-    { label: 'Quotations', path: '/app/quotations', icon: FileText, permission: 'QUOTATION_READ' },
-    { label: 'Approvals', path: '/app/approvals', icon: CheckSquare, role: ['admin', 'sales_manager', 'finance'] },
-    { label: 'Fulfillment', path: '/app/fulfillment', icon: Truck, permission: 'FULFILLMENT_MANAGE' },
-    { label: 'Subscriptions', path: '/app/subscriptions', icon: Repeat, role: ['admin', 'finance', 'sales_rep'] },
-    { label: 'Invoices', path: '/app/invoices', icon: Receipt, permission: 'BILLING_RECONCILE' },
-    { label: 'Deal Health', path: '/app/deal-health', icon: HeartPulse, permission: 'DEAL_HEALTH_VIEW' },
-    { label: 'Reports', path: '/app/reports', icon: BarChart3, permission: 'REPORT_VIEW' },
-    { label: 'Products', path: '/app/products', icon: Package, permission: 'PRODUCT_MANAGE' },
-    { label: 'Users', path: '/app/users', icon: Users, permission: 'USER_MANAGE' },
-  ];
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-display flex flex-col">
-      {/* Top Application Navbar */}
-      <header className="bg-white border-b-2 border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-6">
-            <Link to="/app/dashboard" className="flex items-center gap-3 group">
-              <div className="w-9 h-9 rounded-xl bg-white border-b-2 border-slate-200 flex items-center justify-center p-1 shadow-sm">
-                <img src="/logo.png" alt="DealFlow360" className="w-full h-full object-contain" />
-              </div>
-              <span className="font-black text-xl tracking-tight text-slate-900">
-                Deal<span className="text-brand-500">Flow</span>360
-              </span>
-            </Link>
-          </div>
+    <div className="min-h-screen bg-slate-50 font-display flex flex-col md:flex-row overflow-x-hidden">
+      {/* Collapsible Left Sidebar Navigation */}
+      <SidebarNav
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
 
-          {/* User Profile & RBAC Role Indicator */}
-          <div className="flex items-center gap-4 relative">
-            {user && (
-              <div className="flex items-center gap-3">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${
-                    roleBadgeColors[user.role as UserRole] || 'bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  {roleDisplayNames[user.role as UserRole] || user.role}
-                </span>
+      {/* Main Workspace Column */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Top Header Navigation */}
+        <TopNav
+          sidebarOpen={!sidebarCollapsed}
+          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
 
-                <div className="relative">
-                  <button
-                    onClick={() => setProfileOpen(!profileOpen)}
-                    className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-brand-500 text-white font-black text-xs flex items-center justify-center">
-                      {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                    <span className="text-xs font-extrabold text-slate-800 hidden sm:inline">
-                      {user.fullName}
-                    </span>
-                    <ChevronDown size={14} className="text-slate-400" />
-                  </button>
+        {/* Dynamic Route View Area */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          <Routes>
+            {/* 1. Dashboard */}
+            <Route path="dashboard" element={<Dashboard />} />
 
-                  {profileOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border-2 border-slate-200 py-2 z-50">
-                      <div className="px-4 py-2 border-b border-slate-100">
-                        <p className="text-xs font-black text-slate-900">{user.fullName}</p>
-                        <p className="text-[11px] font-bold text-slate-400 truncate">{user.email}</p>
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors mt-1"
-                      >
-                        <LogOut size={14} />
-                        Log Out
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Wireframe Module Navigation Bar */}
-        <div className="bg-slate-100/80 border-t border-slate-200 overflow-x-auto">
-          <div className="max-w-7xl mx-auto px-6 flex items-center gap-1 py-1.5">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
-
-              return (
-                <PermissionGuard
-                  key={item.path}
-                  permission={item.permission}
-                  role={item.role as any}
-                >
-                  <Link
-                    to={item.path}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
-                      isActive
-                        ? 'bg-slate-900 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white'
-                    }`}
-                  >
-                    <Icon size={14} />
-                    {item.label}
-                  </Link>
+            {/* 2. Quotations & Builder */}
+            <Route
+              path="quotations"
+              element={
+                <PermissionGuard permission="QUOTATION_READ" fallback={<AccessDenied module="Quotations" />}>
+                  <QuotationsPage />
                 </PermissionGuard>
-              );
-            })}
-          </div>
-        </div>
-      </header>
+              }
+            />
 
-      {/* Main Workspace View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-        <Routes>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="quotations" element={<PlaceholderModule name="Quotations & Builder" />} />
-          <Route path="approvals" element={<PlaceholderModule name="Approvals Queue" />} />
-          <Route path="fulfillment" element={<PlaceholderModule name="Fulfillment & Stock Allocation" />} />
-          <Route path="subscriptions" element={<PlaceholderModule name="Recurring Subscriptions" />} />
-          <Route path="invoices" element={<PlaceholderModule name="Invoices & Billing" />} />
-          <Route path="deal-health" element={<PlaceholderModule name="Deal Health & Anomaly Detection" />} />
-          <Route path="reports" element={<PlaceholderModule name="Commercial Performance Reports" />} />
-          <Route path="products" element={<PlaceholderModule name="Products & Pricing Catalog" />} />
-          <Route path="users" element={<PlaceholderModule name="User & Role Management" />} />
-          <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
-        </Routes>
-      </main>
+            {/* 3. Deal Pipeline */}
+            <Route
+              path="pipeline"
+              element={
+                <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Deal Pipeline" />}>
+                  <PipelinePage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 4. Approvals Queue */}
+            <Route
+              path="approvals"
+              element={
+                <PermissionGuard role={['admin', 'sales_manager', 'finance']} fallback={<AccessDenied module="Approvals Queue" />}>
+                  <ApprovalsPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 5. Fulfillment & Stock */}
+            <Route
+              path="fulfillment"
+              element={
+                <PermissionGuard permission="FULFILLMENT_MANAGE" fallback={<AccessDenied module="Fulfillment & Stock" />}>
+                  <FulfillmentPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 6. Invoices & Billing */}
+            <Route
+              path="billing"
+              element={
+                <PermissionGuard permission="BILLING_RECONCILE" fallback={<AccessDenied module="Invoices & Billing" />}>
+                  <BillingPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 7. Subscriptions */}
+            <Route
+              path="subscriptions"
+              element={
+                <PermissionGuard role={['admin', 'finance', 'sales_rep']} fallback={<AccessDenied module="Subscriptions" />}>
+                  <SubscriptionsPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 8. Customers */}
+            <Route
+              path="customers"
+              element={
+                <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Customers & Accounts" />}>
+                  <CustomersPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 9. Products & Catalog */}
+            <Route
+              path="products"
+              element={
+                <PermissionGuard role={['admin', 'sales_manager']} fallback={<AccessDenied module="Product Catalog" />}>
+                  <ProductsPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 10. Commercial Reports */}
+            <Route
+              path="reports"
+              element={
+                <PermissionGuard permission="REPORT_VIEW" fallback={<AccessDenied module="Commercial Reports" />}>
+                  <ReportsPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* 11. Settings & Users */}
+            <Route
+              path="settings"
+              element={
+                <PermissionGuard permission="USER_MANAGE" fallback={<AccessDenied module="System Settings" />}>
+                  <SettingsPage />
+                </PermissionGuard>
+              }
+            />
+
+            {/* Fallback to Dashboard */}
+            <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }
 
-function PlaceholderModule({ name }: { name: string }) {
+function AccessDenied({ module }: { module: string }) {
   return (
-    <div className="card-tactile bg-white rounded-3xl p-8 border-2 border-slate-200/80 shadow-sm text-center py-16">
-      <div className="w-16 h-16 rounded-2xl bg-brand-50 border-2 border-brand-200 flex items-center justify-center mx-auto mb-4 text-brand-600">
-        <FileText size={32} />
+    <div className="card-tactile bg-white rounded-3xl p-8 border-2 border-red-200/80 shadow-sm text-center py-16 max-w-xl mx-auto mt-12">
+      <div className="w-16 h-16 rounded-2xl bg-red-50 border-2 border-red-200 flex items-center justify-center mx-auto mb-4 text-red-600">
+        <ShieldAlert size={32} />
       </div>
-      <h2 className="text-2xl font-black text-slate-900 mb-2">{name}</h2>
+      <h2 className="text-2xl font-black text-slate-900 mb-2">Access Restricted</h2>
       <p className="text-slate-500 font-bold text-sm max-w-md mx-auto mb-6">
-        Connected to DealFlow360 backend REST API (`/api/v1`). Backend authentication and RBAC authorization are active.
+        Your active role does not have permission to view <strong className="text-slate-900">{module}</strong>. Use the Role Switcher in the top right user menu to simulate other roles.
       </p>
       <Link to="/app/dashboard" className="btn-tactile btn-primary px-6 py-3 text-sm inline-flex items-center gap-2">
         Return to Dashboard

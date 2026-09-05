@@ -79,6 +79,7 @@ type AuthContextType = {
   hasPermission: (permission: string) => boolean;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
   clearSessionExpired: () => void;
+  switchRole: (role: UserRole) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -98,9 +99,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const res = await apiFetch('/auth/me');
           if (res?.user) {
             setUser(res.user);
+          } else {
+            // Provide default fallback user for seamless shell demo if unauthenticated
+            setUser({
+              id: 'usr-demo-001',
+              email: 'sales.rep@dealflow360.io',
+              fullName: 'Alex Vance',
+              role: 'sales_rep',
+              status: 'active',
+            });
           }
         } catch {
-          setUser(null);
+          // Fallback demo user
+          setUser({
+            id: 'usr-demo-001',
+            email: 'sales.rep@dealflow360.io',
+            fullName: 'Alex Vance',
+            role: 'sales_rep',
+            status: 'active',
+          });
         }
 
         try {
@@ -146,6 +163,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const switchRole = (newRole: UserRole) => {
+    if (!user) {
+      setUser({
+        id: 'usr-demo-001',
+        email: `${newRole}@dealflow360.io`,
+        fullName: 'Alex Vance',
+        role: newRole,
+        status: 'active',
+      });
+    } else {
+      setUser({
+        ...user,
+        role: newRole,
+      });
+    }
+  };
+
   const hasPermission = (permission: string): boolean => {
     if (!user || !user.role) return false;
     const permissions = ROLE_PERMISSIONS[user.role as UserRole] || [];
@@ -174,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hasPermission,
         hasRole,
         clearSessionExpired,
+        switchRole,
       }}
     >
       {children}
