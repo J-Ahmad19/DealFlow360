@@ -13,8 +13,11 @@ router.get('/', requireRole(['sales_rep', 'sales_manager', 'admin']), Quotations
 router.get('/:id', requireRole(['sales_rep', 'sales_manager', 'admin']), QuotationsController.get);
 router.patch('/:id', requireRole(['sales_rep', 'sales_manager', 'admin']), QuotationsController.update);
 
-// State transitions
+// State transitions via explicit endpoints
 router.post('/:id/submit', requireRole(['sales_rep', 'sales_manager', 'admin']), QuotationsController.submit);
 router.post('/:id/revise', requireRole(['sales_manager', 'admin']), QuotationsController.revise);
+
+// Generic status change for Kanban board drag-drop (validates via state machine)
+router.patch('/:id/status', requireRole(['sales_rep', 'sales_manager', 'admin']), QuotationsController.changeStatus);
 
 export const quotationsRoutes = router;

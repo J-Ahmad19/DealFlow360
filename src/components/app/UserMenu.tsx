@@ -12,7 +12,7 @@ const roleBadges: Record<UserRole, { label: string; style: string }> = {
 
 
 
-export default function UserMenu() {
+export default function UserMenu({ sideNav = false }: { sideNav?: boolean }) {
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -45,7 +45,11 @@ export default function UserMenu() {
       {/* Menu Trigger Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2.5 p-1.5 pl-2.5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 shadow-sm transition-all text-left"
+        className={`flex items-center gap-2.5 p-1.5 pl-2.5 rounded-2xl border-2 shadow-sm transition-all text-left w-full ${
+          sideNav 
+            ? 'bg-slate-800 hover:bg-slate-700 border-slate-700' 
+            : 'bg-white hover:bg-slate-50 border-slate-200'
+        }`}
         aria-expanded={open}
         aria-haspopup="true"
       >
@@ -53,8 +57,8 @@ export default function UserMenu() {
           {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
         </div>
 
-        <div className="hidden md:block">
-          <p className="text-xs font-black text-slate-900 leading-none">{user.fullName}</p>
+        <div className="hidden md:block flex-1 truncate">
+          <p className={`text-xs font-black leading-none truncate ${sideNav ? 'text-white' : 'text-slate-900'}`}>{user.fullName}</p>
           <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border mt-0.5 ${activeRoleInfo.style}`}>
             {activeRoleInfo.label}
           </span>
@@ -65,7 +69,7 @@ export default function UserMenu() {
 
       {/* Dropdown Menu */}
       {open && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border-2 border-slate-200 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className={`absolute ${sideNav ? 'bottom-full left-0 mb-2 origin-bottom-left' : 'right-0 mt-2 origin-top-right'} w-64 bg-white rounded-3xl shadow-2xl border-2 border-slate-200 py-3 z-50 animate-in fade-in duration-150`}>
           {/* User Profile Header */}
           <div className="px-5 py-3 border-b border-slate-100">
             <p className="text-sm font-black text-slate-900">{user.fullName}</p>

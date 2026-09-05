@@ -24,6 +24,7 @@ import { requestLogger } from './core/middleware/requestLogger.js';
 import { notFound } from './core/middleware/notFound.js';
 import { errorHandler } from './core/middleware/errorHandler.js';
 import { closeDbPool } from './db/client.js';
+import { runMigrations } from './db/migrate.js';
 import apiRouter from './routes/index.js';
 import { startJobScheduler, stopJobScheduler } from './jobs/index.js';
 
@@ -70,37 +71,48 @@ app.use(errorHandler);
 
 // ─── Start HTTP server ────────────────────────────────────────────────────────
 
-const server = app.listen(config.PORT, () => {
-  logger.info(
-    { port: config.PORT, env: config.NODE_ENV },
-    `🚀  DealFlow360 API running on http://localhost:${config.PORT.toString()}/api/v1`,
-  );
-  // Start background job workers (billing, deal health, recommendations, notifications)
-  startJobScheduler();
-});
+// Run migrations first, then start listening.
+// If migrations fail the process exits immediately with a non-zero code.
+async function bootstrap(): Promise<void> {
+  await runMigrations();
 
-// ─── Graceful shutdown ────────────────────────────────────────────────────────
-
-async function shutdown(signal: string): Promise<void> {
-  logger.info(`${signal} received — shutting down gracefully`);
-
-  server.close(async () => {
-    logger.info('HTTP server closed');
-    stopJobScheduler();
-    await closeDbPool();
-    logger.info('All connections drained. Goodbye.');
-    process.exit(0);
+  const server = app.listen(config.PORT, () => {
+    logger.info(
+      { port: config.PORT, env: config.NODE_ENV },
+      `🚀  DealFlow360 API running on http://localhost:${config.PORT.toString()}/api/v1`,
+    );
+    // Start background job workers (billing, deal health, recommendations, notifications)
+    startJobScheduler();
   });
 
-  // Force exit after 10 s if connections don't drain
-  setTimeout(() => {
-    logger.error('Forced shutdown after timeout');
-    process.exit(1);
-  }, 10_000);
+  // ─── Graceful shutdown ────────────────────────────────────────────────────────
+
+  async function shutdown(signal: string): Promise<void> {
+    logger.info(`${signal} received — shutting down gracefully`);
+
+    server.close(async () => {
+      logger.info('HTTP server closed');
+      stopJobScheduler();
+      await closeDbPool();
+      logger.info('All connections drained. Goodbye.');
+      process.exit(0);
+    });
+
+    // Force exit after 10 s if connections don't drain
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 10_000);
+  }
+
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT',  () => void shutdown('SIGINT'));
 }
 
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('SIGINT',  () => void shutdown('SIGINT'));
+void bootstrap().catch((err) => {
+  logger.fatal({ err }, 'Bootstrap failed — exiting.');
+  process.exit(1);
+});
 
 process.on('uncaughtException', (err) => {
   logger.fatal({ err }, 'Uncaught exception — process will exit');

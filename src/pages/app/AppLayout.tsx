@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
-import GlobalTopNav from '../../components/app/GlobalTopNav';
+import GlobalSideNav from '../../components/app/GlobalSideNav';
 import { PermissionGuard } from '../../components/auth/PermissionGuard';
 import Dashboard from '../Dashboard';
 import QuotationsPage from './QuotationsPage';
@@ -16,12 +16,12 @@ import { ShieldAlert } from 'lucide-react';
 
 export default function AppLayout() {
   return (
-    <div className="min-h-screen bg-slate-50 font-display flex flex-col overflow-x-hidden">
-      {/* Global Top Navigation */}
-      <GlobalTopNav />
+    <div className="flex h-screen bg-slate-50 font-display overflow-hidden">
+      {/* Global Side Navigation */}
+      <GlobalSideNav />
 
       {/* Main Workspace */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-full mx-auto">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full max-w-full">
         <Routes>
           {/* 1. Dashboard */}
           <Route path="dashboard" element={<Dashboard />} />

@@ -1,0 +1,4 @@
+-- Migration 0003_spooky_groot
+-- This file was accidentally deleted. Recreated as a no-op placeholder
+-- to restore journal consistency. The schema changes from this migration
+-- were already applied directly to the database.

@@ -37,16 +37,16 @@ export const updateQuotationSchema = z.object({
 
 export type UpdateQuotationInput = z.infer<typeof updateQuotationSchema>;
 
-// State Machine valid transitions
+// State Machine valid transitions (expanded to support Kanban drag-drop)
 export const QUOTATION_STATE_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
-  draft: ['pending_approval', 'approved'],
-  pending_approval: ['approved', 'rejected', 'revision_required'],
-  approved: ['fulfillment', 'under_negotiation'],
-  rejected: [],
+  draft:             ['pending_approval', 'approved', 'under_negotiation'],
+  pending_approval:  ['approved', 'rejected', 'revision_required', 'draft'],
+  approved:          ['fulfillment', 'under_negotiation', 'confirmed'],
+  rejected:          ['draft'],
   revision_required: ['draft', 'pending_approval'],
-  fulfillment: [],
-  confirmed: ['under_negotiation'],
-  under_negotiation: ['pending_approval', 'confirmed'],
+  fulfillment:       ['confirmed'],
+  confirmed:         ['under_negotiation'],
+  under_negotiation: ['pending_approval', 'confirmed', 'draft'],
 };
 
 export function isValidTransition(from: QuotationStatus, to: QuotationStatus): boolean {

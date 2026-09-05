@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { QuotationsService, QuotationError } from './quotations.service.js';
-import { createQuotationSchema, updateQuotationSchema } from './quotations.types.js';
+import { createQuotationSchema, updateQuotationSchema, quotationStatusSchema } from './quotations.types.js';
 
 export const QuotationsController = {
   create: async (req: Request, res: Response) => {
@@ -76,6 +76,28 @@ export const QuotationsController = {
     try {
       const actorId = (req as any).user.id;
       const quotation = await QuotationsService.changeStatus(req.params.id, 'revision_required', actorId);
+      res.json(quotation);
+    } catch (err: any) {
+      if (err instanceof QuotationError) {
+        return res.status(400).json({ error: err.message });
+      }
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  /**
+   * PATCH /:id/status — dedicated endpoint for Kanban board drag-drop status changes.
+   * Accepts: { status: QuotationStatus }
+   * Validates the transition through the state machine.
+   */
+  changeStatus: async (req: Request, res: Response) => {
+    try {
+      const parsed = quotationStatusSchema.safeParse(req.body.status);
+      if (!parsed.success) {
+        return res.status(400).json({ error: `Invalid status value: ${req.body.status}` });
+      }
+      const actorId = (req as any).user.id;
+      const quotation = await QuotationsService.changeStatus(req.params.id, parsed.data, actorId, req.body.reason);
       res.json(quotation);
     } catch (err: any) {
       if (err instanceof QuotationError) {
