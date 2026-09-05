@@ -15,6 +15,7 @@ type Customer = {
   firstName: string;
   lastName: string;
   companyId: string;
+  company?: { name: string };
 };
 
 type AuthContextType = {

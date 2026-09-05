@@ -1,111 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { apiFetch } from '../lib/api';
+import AuthCard from '../components/auth/AuthCard';
 
 export default function Signup() {
-  const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  
-  const { loginUser } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    
-    try {
-      const res = await apiFetch('/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({ email, fullName, password })
-      });
-      
-      loginUser(res.user);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 font-display p-6">
-      <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6 group">
-            <div className="w-8 h-8 rounded-xl bg-white border-b-2 border-slate-200 flex items-center justify-center p-1 group-hover:border-b-0 group-hover:translate-y-0.5 transition-all">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
-            </div>
-            <span className="font-black text-lg tracking-tight text-slate-900">
-              Deal<span className="text-brand-500">Flow</span>360
-            </span>
-          </Link>
-          <h1 className="text-2xl font-black text-slate-900">Create an Account</h1>
-          <p className="text-slate-500 font-medium mt-2">Join DealFlow360 to manage your sales pipeline.</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 font-display p-4 sm:p-6 md:p-8 relative overflow-hidden">
+      {/* Decorative ambient background blur lights */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary-400/10 rounded-full blur-3xl pointer-events-none translate-x-1/2 translate-y-1/2" />
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl font-medium text-sm border border-red-100">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Full Name</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
-              placeholder="Jane Doe"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Work Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
-              placeholder="you@company.com"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
-              placeholder="••••••••"
-              required
-              minLength={8}
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full btn-tactile btn-primary py-3.5 rounded-xl font-bold mt-2"
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <p className="text-center text-slate-500 font-medium text-sm mt-8">
-          Already have an account?{' '}
-          <Link to="/login" className="text-brand-600 hover:text-brand-700 font-bold">
-            Log in
-          </Link>
-        </p>
+      {/* Main Container */}
+      <div className="relative z-10 w-full max-w-xl py-6">
+        <AuthCard initialMode="signup" />
       </div>
     </div>
   );
