@@ -1,0 +1,2 @@
+# jobs/ — Background job workers (e.g. BullMQ, pg-boss)
+# Add worker files here when background processing is needed.

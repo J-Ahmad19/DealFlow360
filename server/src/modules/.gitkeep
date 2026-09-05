@@ -1,0 +1,16 @@
+/**
+ * modules/
+ *
+ * Business feature modules go here, one sub-folder per domain:
+ *
+ *   modules/
+ *   ├── deals/
+ *   │   ├── deals.controller.ts
+ *   │   ├── deals.service.ts
+ *   │   ├── deals.schema.ts     (Zod)
+ *   │   └── deals.router.ts
+ *   ├── users/
+ *   └── ...
+ *
+ * Do not add code here until the DB schema and auth are in place.
+ */
