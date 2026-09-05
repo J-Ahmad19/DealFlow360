@@ -116,7 +116,27 @@ export const contacts = pgTable(
   ]
 );
 
-// ─── Products & Inventory ──────────────────────────────────────────────────────
+// ─── Products, Pricing & Inventory ─────────────────────────────────────────────
+
+export const priceLists = pgTable('price_lists', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  active: boolean('active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const priceListItems = pgTable(
+  'price_list_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    priceListId: uuid('price_list_id').references(() => priceLists.id, { onDelete: 'cascade' }).notNull(),
+    productId: uuid('product_id').references(() => products.id, { onDelete: 'cascade' }).notNull(),
+    price: integer('price').notNull(),
+  },
+  (table) => [
+    uniqueIndex('price_list_items_list_product_idx').on(table.priceListId, table.productId),
+  ]
+);
 
 export const productCategories = pgTable('product_categories', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -265,6 +285,14 @@ export const approvals = pgTable(
     uniqueIndex('approvals_quotation_sequence_uidx').on(table.quotationId, table.sequence),
   ]
 );
+
+export const approvalRules = pgTable('approval_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  minRisk: integer('min_risk').notNull().default(0),
+  maxRisk: integer('max_risk').notNull(),
+  approverRole: userRoleEnum('approver_role').notNull(),
+  sequence: integer('sequence').notNull(),
+});
 
 // ─── Fulfillment & Billing ────────────────────────────────────────────────────
 
