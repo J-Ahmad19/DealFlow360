@@ -9,3 +9,5 @@
  * export * from '../../modules/deals/deals.schema.js';
  * export * from '../../modules/users/users.schema.js';
  */
+
+export * from './dealflow.js';
