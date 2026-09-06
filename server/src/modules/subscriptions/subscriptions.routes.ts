@@ -8,6 +8,7 @@ router.use(authenticate);
 
 const allowedRoles = ['admin', 'finance', 'sales_rep'];
 
+router.post('/', requireRole(['admin'] as any), SubscriptionsController.create);
 router.get('/', requireRole(allowedRoles as any), SubscriptionsController.getDashboard);
 router.get('/:id', requireRole(allowedRoles as any), SubscriptionsController.getDetail);
 

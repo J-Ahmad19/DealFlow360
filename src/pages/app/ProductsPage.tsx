@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Package, Plus, Pencil, Trash2, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 
@@ -38,6 +38,7 @@ const formatCurrency = (value: number | string | undefined) => {
 };
 
 export default function ProductsPage() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -331,7 +332,7 @@ export default function ProductsPage() {
                     const categoryName = categories.find((cat) => cat.id === product.categoryId)?.name || 'Uncategorized';
 
                     return (
-                      <tr key={product.id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={product.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate(`/app/products/${product.id}`)}>
                         <td className="px-4 py-4 font-black">{product.name}</td>
                         <td className="px-4 py-4 font-bold text-slate-500">{categoryName}</td>
                         <td className="px-4 py-4 font-black text-slate-900">{formatCurrency(product.price)}</td>
@@ -351,14 +352,20 @@ export default function ProductsPage() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => handleEdit(product)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleEdit(product);
+                              }}
                               className="btn-tactile bg-white border-2 border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-black inline-flex items-center gap-1"
                             >
                               <Pencil size={14} /> Edit
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDelete(product.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDelete(product.id);
+                              }}
                               className="btn-tactile bg-red-50 border-2 border-red-200 text-red-700 px-3 py-2 rounded-xl text-xs font-black inline-flex items-center gap-1"
                             >
                               <Trash2 size={14} /> Delete

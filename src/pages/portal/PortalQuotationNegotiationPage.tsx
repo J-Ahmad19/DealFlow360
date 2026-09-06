@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, Loader2, Send, ShieldCheck } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { AlertCircle, CheckCircle2, Loader2, Send, ShieldCheck, CreditCard } from 'lucide-react';
 import { apiFetch, ApiError } from '../../lib/api';
 
 const statusLabel: Record<string, string> = {
@@ -12,11 +12,22 @@ const statusLabel: Record<string, string> = {
   fulfillment: 'Fulfillment',
   confirmed: 'Confirmed',
   under_negotiation: 'Under Negotiation',
+  paid: 'Paid',
+};
+
+// Helper function to load the Razorpay SDK dynamically
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 };
 
 export default function PortalQuotationNegotiationPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -143,6 +154,72 @@ export default function PortalQuotationNegotiationPage() {
     }
   };
 
+  const handlePayment = async () => {
+    if (!id) return;
+    setSubmitting(true);
+    
+    const isSdkLoaded = await loadRazorpay();
+    if (!isSdkLoaded) {
+      setToast({ type: 'error', message: 'Razorpay SDK failed to load. Are you online?' });
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      // 1. Ask your backend to create a Razorpay Order
+      const { data: orderData } = await apiFetch(`/portal/quotations/${id}/payment-intent`, {
+        method: 'POST',
+      });
+
+      // 2. Initialize Razorpay Options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Ensure you have this in your .env
+        amount: orderData.amount,
+        currency: orderData.currency || 'USD',
+        name: 'DealFlow360',
+        description: `Payment for Quotation ${quote.title}`,
+        order_id: orderData.razorpayOrderId, 
+        handler: async function (response: any) {
+          // 3. Verify payment success on the backend
+          try {
+            await apiFetch(`/portal/quotations/${id}/payment-verify`, {
+              method: 'POST',
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              }),
+            });
+            
+            setToast({ type: 'success', message: 'Payment successful! Your order is being processed.' });
+            
+            // Reload quote to reflect new 'paid' status
+            const refreshed = await apiFetch(`/portal/quotations/${id}`);
+            setQuote(refreshed.data?.quotation ?? null);
+            setLines(refreshed.data?.lines ?? []);
+          } catch (verifyErr: any) {
+            setToast({ type: 'error', message: verifyErr.message || 'Payment verification failed.' });
+          }
+        },
+        theme: {
+          color: '#0ea5e9' // brand color (sky-500)
+        }
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      
+      paymentObject.on('payment.failed', function (response: any) {
+        setToast({ type: 'error', message: response.error.description || 'Payment failed.' });
+      });
+
+      paymentObject.open();
+    } catch (err: any) {
+      setToast({ type: 'error', message: err.message || 'Unable to initiate payment.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
@@ -223,11 +300,13 @@ export default function PortalQuotationNegotiationPage() {
                       type="number"
                       min={0}
                       max={100}
+                      disabled={quote.status === 'confirmed' || quote.status === 'paid'}
                     />
                     <button
                       type="button"
                       onClick={() => handleDiscountChange(line.id, String(Math.max(0, Number(line.discount ?? 0) - 5)))}
                       className="rounded-xl border border-slate-600 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-slate-200"
+                      disabled={quote.status === 'confirmed' || quote.status === 'paid'}
                     >
                       -5%
                     </button>
@@ -251,6 +330,7 @@ export default function PortalQuotationNegotiationPage() {
                 max={100}
                 placeholder="e.g. 10"
                 className="w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-3 font-bold text-white outline-none focus:border-sky-400"
+                disabled={quote.status === 'confirmed' || quote.status === 'paid'}
               />
               <button
                 type="button"
@@ -260,7 +340,8 @@ export default function PortalQuotationNegotiationPage() {
                   setLines((current) => current.map((line) => ({ ...line, discount: next })));
                   setDiscount('');
                 }}
-                className="rounded-xl border border-sky-400 bg-sky-500/20 px-4 py-3 text-sm font-black text-sky-100"
+                className="rounded-xl border border-sky-400 bg-sky-500/20 px-4 py-3 text-sm font-black text-sky-100 disabled:opacity-50"
+                disabled={quote.status === 'confirmed' || quote.status === 'paid'}
               >
                 Apply
               </button>
@@ -297,24 +378,38 @@ export default function PortalQuotationNegotiationPage() {
           <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
             <div className="mb-4 text-lg font-black">Actions</div>
             <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handleSubmitCounter}
-                disabled={saving}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-500 bg-sky-600/20 px-4 py-3 text-sm font-black text-sky-100 disabled:opacity-70"
-              >
-                {saving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-                Submit Request
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={submitting}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500 bg-emerald-600/20 px-4 py-3 text-sm font-black text-emerald-100 disabled:opacity-70"
-              >
-                {submitting ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
-                Confirm Quotation
-              </button>
+              {quote.status === 'confirmed' || quote.status === 'invoiced' ? (
+                <button
+                  type="button"
+                  onClick={handlePayment}
+                  disabled={submitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-500 bg-blue-600 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-500 disabled:opacity-70"
+                >
+                  {submitting ? <Loader2 className="animate-spin" size={16} /> : <CreditCard size={16} />}
+                  Pay Now via Razorpay
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSubmitCounter}
+                    disabled={saving || quote.status === 'paid'}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-500 bg-sky-600/20 px-4 py-3 text-sm font-black text-sky-100 disabled:opacity-70"
+                  >
+                    {saving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                    Submit Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={submitting || quote.status === 'paid'}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500 bg-emerald-600/20 px-4 py-3 text-sm font-black text-emerald-100 disabled:opacity-70"
+                  >
+                    {submitting ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                    Confirm Quotation
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

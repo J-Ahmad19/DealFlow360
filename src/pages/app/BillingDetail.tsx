@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, Download, CheckCircle2 } from 'lucide-react';
-import { apiFetch } from '../../lib/api';
+import { apiFetch, ApiError } from '../../lib/api';
 
 export default function BillingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [busyAction, setBusyAction] = useState<'reissue' | 'download' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadInvoice() {
@@ -45,6 +47,56 @@ export default function BillingDetail() {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(value || 0);
+
+  const handleReissueInvoice = async () => {
+    if (!id || !invoice) return;
+
+    setBusyAction('reissue');
+    setError(null);
+
+    try {
+      const response = await apiFetch(`/billing/invoices/${id}/reissue`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+
+      const updated = response?.data ?? response;
+      setInvoice((prev: any) => ({ ...prev, ...updated, status: updated.status || prev?.status }));
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Unable to re-issue invoice.';
+      setError(message);
+      console.error('Failed to re-issue invoice:', err);
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleDownloadSummary = async () => {
+    if (!id) return;
+
+    setBusyAction('download');
+    setError(null);
+
+    try {
+      const payload = await apiFetch(`/billing/invoices/${id}/summary`);
+      const summaryText = JSON.stringify(payload, null, 2);
+      const blob = new Blob([summaryText], { type: 'application/json' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${invoice?.invoiceNumber || 'invoice'}-summary.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Unable to download invoice summary.';
+      setError(message);
+      console.error('Failed to download invoice summary:', err);
+    } finally {
+      setBusyAction(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -139,13 +191,27 @@ export default function BillingDetail() {
         </table>
       </div>
 
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+          {error}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
-        <button className="btn-tactile btn-primary px-6 py-3 text-xs rounded-xl">
-          Re-issue Payment
+        <button
+          onClick={handleReissueInvoice}
+          disabled={busyAction !== null}
+          className="btn-tactile btn-primary px-6 py-3 text-xs rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {busyAction === 'reissue' ? 'Re-issuing...' : 'Re-issue Payment'}
         </button>
-        <button className="btn-tactile btn-secondary px-6 py-3 text-xs rounded-xl flex items-center gap-2">
+        <button
+          onClick={handleDownloadSummary}
+          disabled={busyAction !== null}
+          className="btn-tactile btn-secondary px-6 py-3 text-xs rounded-xl flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
           <Download size={14} />
-          Download Summary
+          {busyAction === 'download' ? 'Preparing...' : 'Download Summary'}
         </button>
       </div>
 

@@ -23,6 +23,16 @@ function getCustomerContext(req: Request): CustomerContext {
   return customer;
 }
 
+export async function listQuotations(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const ctx = getCustomerContext(req);
+    const data = await portalService.listCustomerQuotations(ctx);
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getQuotation(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = req.params;

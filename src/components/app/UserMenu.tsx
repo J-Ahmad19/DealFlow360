@@ -8,6 +8,7 @@ const roleBadges: Record<UserRole, { label: string; style: string }> = {
   sales_manager: { label: 'Sales Manager', style: 'bg-amber-500/10 text-amber-700 border-amber-200' },
   finance: { label: 'Finance & Ops', style: 'bg-blue-500/10 text-blue-700 border-blue-200' },
   sales_rep: { label: 'Sales Rep', style: 'bg-brand-500/10 text-brand-700 border-brand-200' },
+  customer: { label: 'Customer', style: 'bg-emerald-500/10 text-emerald-700 border-emerald-200' },
 };
 
 

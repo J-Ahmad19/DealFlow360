@@ -1,6 +1,6 @@
 import { eq, and, isNull, gt } from 'drizzle-orm';
 import { db } from '../../db/client.js';
-import { portalTokens, contacts, companies } from '../../db/schema/dealflow.js';
+import { portalTokens, contacts, companies, users } from '../../db/schema/dealflow.js';
 
 export class PortalAuthRepository {
   static async getContactByEmail(email: string) {
@@ -44,7 +44,7 @@ export class PortalAuthRepository {
     lastName: string;
     email: string;
   }) {
-    const result = await db
+    const [contact] = await db
       .insert(contacts)
       .values({
         companyId: data.companyId,
@@ -54,7 +54,25 @@ export class PortalAuthRepository {
       })
       .returning();
 
-    return Array.isArray(result) ? result[0] ?? null : null;
+    if (contact) {
+      const existingUser = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, data.email.toLowerCase()))
+        .limit(1);
+
+      if (!existingUser.length) {
+        await db.insert(users).values({
+          email: data.email.toLowerCase(),
+          fullName: `${data.firstName} ${data.lastName}`.trim(),
+          passwordHash: null,
+          role: 'customer',
+          status: 'active',
+        });
+      }
+    }
+
+    return contact ?? null;
   }
 
   static async getContactById(contactId: string) {

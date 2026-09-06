@@ -29,7 +29,11 @@ export const ProductsRepository = {
   },
 
   createProduct: async (data: CreateProductDto) => {
-    const [product] = await db.insert(products).values(data).returning();
+    const { attributes, variants, priceLists, ...productData } = data as any;
+    const [product] = await db.insert(products).values({
+      ...productData,
+      attributes: attributes ?? variants ?? [],
+    }).returning();
     return product;
   },
 
@@ -46,9 +50,16 @@ export const ProductsRepository = {
   },
 
   updateProduct: async (id: string, data: UpdateProductDto) => {
+    const { attributes, variants, priceLists, ...productData } = data as any;
+
+    const updatePayload: Record<string, any> = { ...productData };
+    if (attributes !== undefined || variants !== undefined) {
+      updatePayload.attributes = attributes ?? variants ?? [];
+    }
+
     const [product] = await db
       .update(products)
-      .set(data)
+      .set(updatePayload)
       .where(eq(products.id, id))
       .returning();
     return product;

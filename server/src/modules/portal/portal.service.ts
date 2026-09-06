@@ -14,6 +14,24 @@ export class PortalService {
     private approvalEngine: ApprovalRoutingEngine
   ) {}
 
+  async listCustomerQuotations(customerCtx: CustomerContext) {
+    const rows = await db
+      .select()
+      .from(quotations)
+      .where(eq(quotations.customerId, customerCtx.companyId));
+
+    return rows.map((quotation) => ({
+      id: quotation.id,
+      title: quotation.title,
+      amount: quotation.amount || quotation.subtotal || 0,
+      status: quotation.status,
+      customerId: quotation.customerId,
+      lastActivityAt: quotation.lastActivityAt,
+      createdAt: quotation.createdAt,
+      updatedAt: quotation.updatedAt,
+    }));
+  }
+
   async getPortalQuotation(customerCtx: CustomerContext, quotationId: string) {
     const canView = await CustomerPolicy.canViewQuotation(customerCtx, quotationId);
     if (!canView) throw new UnauthorizedError('Not authorized to view this quotation');

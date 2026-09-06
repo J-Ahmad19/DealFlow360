@@ -102,6 +102,14 @@ describe('Customer Negotiation Portal', () => {
 
   const getCustomerCtx = (cId: string): CustomerContext => ({ companyId: cId, contactId });
 
+  it('listCustomerQuotations: should return only this company’s quotes', async () => {
+    const list = await portalService.listCustomerQuotations(getCustomerCtx(customerId));
+
+    expect(Array.isArray(list)).toBe(true);
+    expect(list.some((item) => item.id === quotationId)).toBe(true);
+    expect(list.every((item) => item.customerId === customerId)).toBe(true);
+  });
+
   it('getPortalQuotation: should enforce customer ownership and strip internal fields', async () => {
     // Other customer fails
     await expect(portalService.getPortalQuotation(getCustomerCtx(otherCustomerId), quotationId))

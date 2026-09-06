@@ -135,6 +135,24 @@ describe('Order & Hybrid Billing System', () => {
     expect(refunds[0].amount).toBeGreaterThan(900); // Usually 900-1000 depending on exact ms elapsed
   });
 
+  it('BillingService: should reissue an invoice and return a downloadable summary payload', async () => {
+    const invoiceRow = await db.select().from(invoices).leftJoin(billingSchedules, eq(billingSchedules.id, invoices.billingId)).where(eq(invoices.status, 'draft')).limit(1);
+    expect(invoiceRow.length).toBeGreaterThan(0);
+
+    const invoiceId = invoiceRow[0].invoices.id;
+    const reissued = await BillingService.reissueInvoice(invoiceId);
+    expect(reissued.status).toBe('sent');
+    expect(reissued.amount).toBeGreaterThan(0);
+
+    const summary = await BillingService.getInvoiceSummary(invoiceId);
+    expect(summary).toMatchObject({
+      invoiceNumber: expect.any(String),
+      customerName: expect.any(String),
+      amount: expect.any(Number),
+      status: 'sent',
+    });
+  });
+
   it('BillingService: should list invoice summaries with customer and order metadata', async () => {
     const overview = await BillingService.getInvoiceOverview();
 

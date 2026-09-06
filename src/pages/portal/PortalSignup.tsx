@@ -29,7 +29,11 @@ export default function PortalSignup() {
         body: JSON.stringify(form),
       });
 
-      setMessage(res.message || 'Account created. A magic link has been sent to your email.');
+      const nextMessage = res.loginUrl
+        ? `${res.message || 'Account created. A magic link has been sent to your email.'}\n${res.loginUrl}`
+        : res.message || 'Account created. A magic link has been sent to your email.';
+
+      setMessage(nextMessage);
       setForm({ firstName: '', lastName: '', email: '', companyName: '' });
     } catch (err: any) {
       setError(err.message || 'Unable to create a customer account.');
@@ -61,7 +65,7 @@ export default function PortalSignup() {
         )}
 
         {message && (
-          <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-xl font-medium text-sm border border-green-100">
+          <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-xl font-medium text-sm border border-green-100 whitespace-pre-line break-all">
             {message}
           </div>
         )}

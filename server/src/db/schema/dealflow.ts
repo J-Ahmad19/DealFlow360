@@ -15,7 +15,7 @@ import {
 import { sql } from 'drizzle-orm';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
-export const userRoleEnum = pgEnum('user_role', ['admin', 'sales_manager', 'finance', 'sales_rep']);
+export const userRoleEnum = pgEnum('user_role', ['admin', 'sales_manager', 'finance', 'sales_rep', 'customer']);
 export const userStatusEnum = pgEnum('user_status', ['active', 'inactive', 'suspended']);
 export const quotationStatusEnum = pgEnum('quotation_status', [
   'draft', 
@@ -186,6 +186,10 @@ export const products = pgTable(
     billingInterval: billingIntervalEnum('billing_interval'),
     price: integer('price').notNull().default(0),
     cost: integer('cost').notNull().default(0),
+    taxPercent: integer('tax_percent').notNull().default(15),
+    quantityOnHand: integer('quantity_on_hand').notNull().default(0),
+    description: text('description'),
+    attributes: jsonb('attributes').default(sql`'[]'::jsonb`).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [

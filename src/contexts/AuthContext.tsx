@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api';
 
-export type UserRole = 'admin' | 'sales_manager' | 'finance' | 'sales_rep';
+export type UserRole = 'admin' | 'sales_manager' | 'finance' | 'sales_rep' | 'customer';
 
 export type User = {
   id: string;
@@ -63,6 +63,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'QUOTATION_READ',
     'QUOTATION_EDIT',
     'QUOTATION_SUBMIT',
+    'NEGOTIATION_RESPOND',
+  ],
+  customer: [
+    'PORTAL_ACCESS',
+    'QUOTATION_READ',
     'NEGOTIATION_RESPOND',
   ],
 };

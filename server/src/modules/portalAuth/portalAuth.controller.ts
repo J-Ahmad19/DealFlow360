@@ -18,6 +18,7 @@ export class PortalAuthController {
         contactId: result.contactId,
         companyId: result.companyId,
         email: result.email,
+        loginUrl: result.loginUrl,
       });
     } catch (error) {
       next(error);
@@ -31,10 +32,11 @@ export class PortalAuthController {
         throw new ValidationError(parsed.error.errors[0].message);
       }
 
-      await PortalAuthService.requestMagicLink(parsed.data.email);
+      const { loginUrl } = await PortalAuthService.requestMagicLink(parsed.data.email);
 
       res.status(200).json({
         message: 'If an account exists with that email, a magic link has been sent.',
+        loginUrl,
       });
     } catch (error) {
       next(error);

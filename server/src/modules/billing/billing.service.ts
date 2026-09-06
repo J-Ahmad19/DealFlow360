@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client.js';
 import { billingSchedules, companies, invoices, orders, quotations } from '../../db/schema/dealflow.js';
 
@@ -58,5 +58,50 @@ export class BillingService {
       .where(eq(invoices.id, id));
 
     return invoice || null;
+  }
+
+  static async reissueInvoice(id: string) {
+    const current = await this.getInvoiceById(id);
+    if (!current) {
+      throw new Error('Invoice not found');
+    }
+
+    if (current.status === 'paid') {
+      throw new Error('Paid invoices cannot be re-issued');
+    }
+
+    const [updated] = await db
+      .update(invoices)
+      .set({
+        status: 'sent',
+        dueAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      })
+      .where(eq(invoices.id, id))
+      .returning();
+
+    return {
+      ...current,
+      status: updated.status,
+      dueAt: updated.dueAt,
+      amount: Number(current.amount || 0),
+      customerName: current.customerName || 'Unknown Customer',
+    };
+  }
+
+  static async getInvoiceSummary(id: string) {
+    const invoice = await this.getInvoiceById(id);
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
+    return {
+      invoiceNumber: invoice.invoiceNumber,
+      customerName: invoice.customerName || 'Unknown Customer',
+      amount: Number(invoice.amount || 0),
+      status: invoice.status || 'draft',
+      dueAt: invoice.dueAt,
+      orderId: invoice.orderId,
+      generatedAt: new Date().toISOString(),
+    };
   }
 }

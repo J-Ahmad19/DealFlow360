@@ -3,13 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Activity, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 
-const statusStyles: Record<string, string> = {
-  critical: 'bg-red-50 text-red-700 border-red-200',
-  high: 'bg-amber-50 text-amber-700 border-amber-200',
-  medium: 'bg-blue-50 text-blue-700 border-blue-200',
-  low: 'bg-brand-50 text-brand-700 border-brand-200',
-};
-
 export default function DealHealthPage() {
   const navigate = useNavigate();
   const [summary, setSummary] = useState<any>(null);

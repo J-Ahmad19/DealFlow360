@@ -6,6 +6,11 @@ import { UnauthorizedError } from '../../core/errors/AppError.js';
 import { PortalJwtPayload, SignupInput } from './portalAuth.types.js';
 
 export class PortalAuthService {
+  static buildMagicLink(token: string) {
+    const frontendBaseUrl = process.env.PORTAL_FRONTEND_URL || 'http://localhost:5173';
+    return `${frontendBaseUrl}/portal/verify?token=${encodeURIComponent(token)}`;
+  }
+
   static async requestMagicLink(email: string) {
     const contact = await PortalAuthRepository.getContactByEmail(email);
 
@@ -14,23 +19,20 @@ export class PortalAuthService {
       throw new UnauthorizedError('This customer account is not registered yet. Please sign up first.');
     }
 
-    // Generate a secure 64-byte token
     const token = crypto.randomBytes(64).toString('base64url');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
-    // Token expires in 15 minutes
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await PortalAuthRepository.createToken(contact.id, tokenHash, expiresAt);
 
-    // In a real application, send this token via email.
-    // For local development, we log it so we can test.
+    const loginUrl = this.buildMagicLink(token);
+
     console.log('\n=========================================');
-    console.log(`MAGIC LINK TOKEN FOR ${email}:`);
-    console.log(token);
+    console.log(`PORTAL LOGIN LINK FOR ${email}:`);
+    console.log(loginUrl);
     console.log('=========================================\n');
 
-    return true;
+    return { loginUrl };
   }
 
   static async signup(input: SignupInput) {
@@ -51,12 +53,13 @@ export class PortalAuthService {
       email: input.email,
     });
 
-    await this.requestMagicLink(input.email);
+    const { loginUrl } = await this.requestMagicLink(input.email);
 
     return {
       contactId: contact.id,
       companyId: company.id,
       email: input.email,
+      loginUrl,
     };
   }
 

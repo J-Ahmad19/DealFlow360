@@ -8,7 +8,9 @@ import {
   cancelSubscription,
   listInvoices,
   getInvoice,
-  getSubscription, // Added the missing import for the detail page
+  reissueInvoice,
+  getInvoiceSummary,
+  getSubscription,
 } from './billing.controller.js';
 import { authenticate } from '../../core/middleware/authenticate.js';
 import { idempotencyMiddleware } from '../../core/middleware/idempotency.js';
@@ -28,6 +30,8 @@ billingRoutes.use(authenticate);
 
 billingRoutes.get('/invoices', listInvoices);
 billingRoutes.get('/invoices/:id', getInvoice);
+billingRoutes.post('/invoices/:id/reissue', reissueInvoice);
+billingRoutes.get('/invoices/:id/summary', getInvoiceSummary);
 
 // ─── Subscriptions Routes ────────────────────────────────────────────────────
 export const subscriptionsRoutes = Router({ mergeParams: true });

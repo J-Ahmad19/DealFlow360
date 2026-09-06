@@ -34,6 +34,26 @@ export async function getInvoice(req: Request, res: Response, next: NextFunction
   }
 }
 
+export async function reissueInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const invoice = await BillingService.reissueInvoice(req.params.id);
+    res.json({ data: invoice, message: 'Invoice re-issued successfully' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unable to re-issue invoice';
+    res.status(400).json({ error: { message } });
+  }
+}
+
+export async function getInvoiceSummary(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const summary = await BillingService.getInvoiceSummary(req.params.id);
+    res.json(summary);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unable to generate invoice summary';
+    res.status(404).json({ error: { message } });
+  }
+}
+
 export async function createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { quotationId } = z.object({ quotationId: z.string().uuid() }).parse(req.body);

@@ -11,6 +11,7 @@ import DealHealthPage from './DealHealthPage';
 import SubscriptionsPage from './SubscriptionsPage';
 import CustomersPage from './CustomersPage';
 import ProductsPage from './ProductsPage';
+import ProductDetailPage from './ProductDetailPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
 import { ShieldAlert } from 'lucide-react';
@@ -113,6 +114,15 @@ export default function AppLayout() {
             element={
               <PermissionGuard role={['admin']} fallback={<AccessDenied module="Product Catalog" />}>
                 <ProductsPage />
+              </PermissionGuard>
+            }
+          />
+
+          <Route
+            path="products/:id"
+            element={
+              <PermissionGuard role={['admin']} fallback={<AccessDenied module="Product Catalog" />}>
+                <ProductDetailPage />
               </PermissionGuard>
             }
           />
