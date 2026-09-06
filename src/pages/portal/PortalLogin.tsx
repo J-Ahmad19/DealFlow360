@@ -75,7 +75,7 @@ export default function PortalLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full btn-tactile btn-primary py-3.5 rounded-xl font-bold mt-2"
+            className="w-full btn-tactile btn-primary py-3.5 rounded-xl font-bold mt-2 bg-brand-500 text-white hover:bg-brand-600 transition"
           >
             {loading ? 'Sending link...' : 'Send Magic Link'}
           </button>

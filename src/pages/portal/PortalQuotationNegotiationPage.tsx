@@ -33,9 +33,24 @@ export default function PortalQuotationNegotiationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [quote, setQuote] = useState<any>(null);
   const [lines, setLines] = useState<any[]>([]);
-  const [message, setMessage] = useState('');
-  const [discount, setDiscount] = useState('');
+  const [overallDiscount, setOverallDiscount] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Granular control over what is locked based on logical business steps
+  const isNegotiationLocked = useMemo(() => {
+    if (!quote) return true;
+    // Customer cannot negotiate if it's already pending internal approval, confirmed, paid, etc.
+    const lockedStatuses = ['pending_approval', 'confirmed', 'paid', 'fulfillment', 'rejected'];
+    return lockedStatuses.includes(quote.status);
+  }, [quote]);
+
+  const isConfirmationLocked = useMemo(() => {
+    if (!quote) return true;
+    // Customer can only confirm if the quote is approved, or maybe under negotiation/draft.
+    // They cannot confirm if it's already confirmed, paid, or waiting on sales approval.
+    const lockedStatuses = ['pending_approval', 'confirmed', 'paid', 'fulfillment', 'rejected'];
+    return lockedStatuses.includes(quote.status);
+  }, [quote]);
 
   useEffect(() => {
     async function load() {
@@ -43,47 +58,68 @@ export default function PortalQuotationNegotiationPage() {
         if (!id) return;
         const response = await apiFetch(`/portal/quotations/${id}`);
         setQuote(response.data?.quotation ?? null);
-        setLines(response.data?.lines ?? []);
+        
+        const initializedLines = (response.data?.lines ?? []).map((line: any) => ({
+          ...line,
+          inputDiscount: line.discount !== null && line.discount !== undefined ? String(line.discount) : '0'
+        }));
+        setLines(initializedLines);
       } catch (err: any) {
-        console.error('Failed to load portal quotation', err);
         setToast({ type: 'error', message: err.message || 'Unable to load quotation' });
       } finally {
         setLoading(false);
       }
     }
-
     load();
   }, [id]);
 
   const total = useMemo(
-    () => lines.reduce((sum, line) => sum + Number((line.total ?? 0) || 0), 0),
+    () => lines.reduce((sum, line) => sum + Number(line.total ?? 0), 0),
     [lines]
   );
 
-  const handleDiscountChange = (lineId: string, value: string) => {
-    const numeric = Math.max(0, Math.min(100, Number(value) || 0));
+  const handleLineDiscountChange = (lineId: string, value: string) => {
+    if (value !== '' && !/^\d+$/.test(value)) return;
     setLines((current) =>
-      current.map((line) =>
-        line.id === lineId
-          ? { ...line, discount: numeric }
-          : line
-      )
+      current.map((line) => (line.id === lineId ? { ...line, inputDiscount: value } : line))
     );
   };
 
+  const handleLineDiscountBlur = (lineId: string) => {
+    setLines((current) =>
+      current.map((line) => {
+        if (line.id !== lineId) return line;
+        let numeric = Number(line.inputDiscount);
+        if (isNaN(numeric)) numeric = 0;
+        numeric = Math.max(0, Math.min(100, numeric)); 
+        return { ...line, inputDiscount: String(numeric) };
+      })
+    );
+  };
+
+  const handleApplyOverallDiscount = () => {
+    let numeric = Number(overallDiscount);
+    if (isNaN(numeric) || overallDiscount === '') return;
+    numeric = Math.max(0, Math.min(100, numeric));
+
+    setLines((current) => 
+      current.map((line) => ({ ...line, inputDiscount: String(numeric) }))
+    );
+    setOverallDiscount('');
+  };
+
   const handleSubmitCounter = async () => {
-    if (!id) return;
-    if (!lines.some((line) => line.discount !== undefined && Number(line.discount) >= 0)) {
-      setToast({ type: 'error', message: 'Please enter a valid discount request.' });
-      return;
-    }
+    if (!id || isNegotiationLocked) return;
 
     setSaving(true);
     try {
-      const modifications = lines.map((line) => ({
-        lineId: line.id,
-        discount: Number(line.discount ?? 0),
-      }));
+      const modifications = lines.map((line) => {
+        let disc = Number(line.inputDiscount);
+        return {
+          lineId: line.id,
+          discount: isNaN(disc) ? 0 : Math.max(0, Math.min(100, disc)),
+        };
+      });
 
       const result = await apiFetch(`/portal/quotations/${id}/counter-offer`, {
         method: 'POST',
@@ -98,55 +134,39 @@ export default function PortalQuotationNegotiationPage() {
 
       const refreshed = await apiFetch(`/portal/quotations/${id}`);
       setQuote(refreshed.data?.quotation ?? null);
-      setLines(refreshed.data?.lines ?? []);
+      setLines((refreshed.data?.lines ?? []).map((l: any) => ({ ...l, inputDiscount: String(l.discount || 0) })));
     } catch (err: any) {
-      const error = err instanceof ApiError ? err.message : 'Unable to submit request.';
-      setToast({ type: 'error', message: error });
+      setToast({ type: 'error', message: err.message || 'Unable to submit request.' });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddMessage = async () => {
-    if (!id || !message.trim()) return;
-    try {
-      await apiFetch(`/portal/quotations/${id}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ message: message.trim() }),
-      });
-      setMessage('');
-      setToast({ type: 'success', message: 'Comment sent to the sales team.' });
-    } catch (err: any) {
-      setToast({ type: 'error', message: err.message || 'Unable to send message.' });
-    }
-  };
-
   const handleConfirm = async () => {
-    if (!id) return;
+    if (!id || isConfirmationLocked) return;
     setSubmitting(true);
     try {
+      const modifications = lines.map((line) => ({
+        lineId: line.id,
+        discount: Number(line.inputDiscount) || 0,
+      }));
+
       const result = await apiFetch(`/portal/quotations/${id}/confirm`, {
         method: 'POST',
-        body: JSON.stringify({
-          modifications: lines.map((line) => ({
-            lineId: line.id,
-            discount: Number(line.discount ?? 0),
-          })),
-        }),
+        body: JSON.stringify({ modifications }),
       });
 
       const nextStatus = result?.data?.status ?? 'confirmed';
       setToast({
         type: 'success',
-        message:
-          nextStatus === 'pending_approval'
+        message: nextStatus === 'pending_approval'
             ? 'Final terms exceeded the policy threshold and were routed back to approval.'
-            : 'Quotation confirmed and moved directly to fulfillment.',
+            : 'Quotation confirmed successfully.',
       });
 
       const refreshed = await apiFetch(`/portal/quotations/${id}`);
       setQuote(refreshed.data?.quotation ?? null);
-      setLines(refreshed.data?.lines ?? []);
+      setLines((refreshed.data?.lines ?? []).map((l: any) => ({ ...l, inputDiscount: String(l.discount || 0) })));
     } catch (err: any) {
       setToast({ type: 'error', message: err.message || 'Unable to confirm quotation.' });
     } finally {
@@ -154,161 +174,86 @@ export default function PortalQuotationNegotiationPage() {
     }
   };
 
-  const handlePayment = async () => {
-    if (!id) return;
-    setSubmitting(true);
-    
-    const isSdkLoaded = await loadRazorpay();
-    if (!isSdkLoaded) {
-      setToast({ type: 'error', message: 'Razorpay SDK failed to load. Are you online?' });
-      setSubmitting(false);
-      return;
-    }
-
-    try {
-      // 1. Ask your backend to create a Razorpay Order
-      const { data: orderData } = await apiFetch(`/portal/quotations/${id}/payment-intent`, {
-        method: 'POST',
-      });
-
-      // 2. Initialize Razorpay Options
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Ensure you have this in your .env
-        amount: orderData.amount,
-        currency: orderData.currency || 'USD',
-        name: 'DealFlow360',
-        description: `Payment for Quotation ${quote.title}`,
-        order_id: orderData.razorpayOrderId, 
-        handler: async function (response: any) {
-          // 3. Verify payment success on the backend
-          try {
-            await apiFetch(`/portal/quotations/${id}/payment-verify`, {
-              method: 'POST',
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature
-              }),
-            });
-            
-            setToast({ type: 'success', message: 'Payment successful! Your order is being processed.' });
-            
-            // Reload quote to reflect new 'paid' status
-            const refreshed = await apiFetch(`/portal/quotations/${id}`);
-            setQuote(refreshed.data?.quotation ?? null);
-            setLines(refreshed.data?.lines ?? []);
-          } catch (verifyErr: any) {
-            setToast({ type: 'error', message: verifyErr.message || 'Payment verification failed.' });
-          }
-        },
-        theme: {
-          color: '#0ea5e9' // brand color (sky-500)
-        }
-      };
-
-      const paymentObject = new (window as any).Razorpay(options);
-      
-      paymentObject.on('payment.failed', function (response: any) {
-        setToast({ type: 'error', message: response.error.description || 'Payment failed.' });
-      });
-
-      paymentObject.open();
-    } catch (err: any) {
-      setToast({ type: 'error', message: err.message || 'Unable to initiate payment.' });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-        <Loader2 className="animate-spin mr-3" size={20} />
-        Loading quotation...
-      </div>
-    );
-  }
-
-  if (!quote) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="rounded-2xl border border-red-400 bg-red-500/10 p-8 text-red-100">
-          Quotation not found or access denied.
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3" size={20} />Loading quotation...</div>;
+  if (!quote) return <div className="min-h-screen bg-slate-900 flex items-center justify-center"><div className="rounded-2xl border border-red-400 bg-red-500/10 p-8 text-red-100">Quotation not found.</div></div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-[#0b1221] text-white font-sans">
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 rounded-2xl border border-sky-400/30 bg-sky-500/10 px-4 py-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-black">11</div>
-              <div>
-                <div className="text-xs uppercase tracking-[0.25em] text-sky-100/70">Customer Portal</div>
-                <div className="text-2xl font-black">DealFlow360</div>
-              </div>
+        
+        <div className="mb-6 rounded-2xl border border-white/10 bg-[#0f172a] px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-black">11</div>
+            <div>
+              <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">Customer Portal</div>
+              <div className="text-2xl font-black">DealFlow360</div>
             </div>
-            <div className="flex gap-2"> 
-              <button className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-bold">My Quotation</button>
-              <button className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-bold">Messages</button>
-              <button className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-bold">Profile</button>
-            </div>
+          </div>
+          <div className="flex gap-2"> 
+            <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold hover:bg-white/10 transition">My Quotation</button>
+            <button className="rounded-xl border border-white/10 bg-transparent px-4 py-2 text-sm font-bold hover:bg-white/5 transition">Messages</button>
+            <button className="rounded-xl border border-white/10 bg-transparent px-4 py-2 text-sm font-bold hover:bg-white/5 transition">Profile</button>
           </div>
         </div>
 
-        <h1 className="mb-2 text-4xl font-black tracking-tight">Customer Portal Negotiation Screen</h1>
-        <p className="mb-6 text-slate-400">Customer reviews and negotiates the quote directly, no email needed.</p>
+        <h1 className="mb-2 text-3xl font-black">Customer Portal Negotiation Screen</h1>
+        <p className="mb-6 text-slate-400 text-sm">Customer reviews and negotiates the quote directly, no email needed.</p>
 
-        <div className="mb-8 inline-flex items-center rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm font-black text-amber-200">
+        <div className={`mb-8 inline-flex items-center rounded-full border px-4 py-1.5 text-xs font-black uppercase tracking-wider ${
+          quote.status === 'pending_approval' ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' :
+          quote.status === 'confirmed' ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' :
+          'border-sky-500/40 bg-sky-500/10 text-sky-300'
+        }`}>
           Status: {statusLabel[quote.status] || quote.status}
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
-          <div className="grid grid-cols-1 gap-0 md:grid-cols-2">
-            <div className="border-b border-slate-700 p-4 md:border-b-0 md:border-r">
-              <div className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">Quote</div>
+        <div className="overflow-hidden rounded-2xl border border-slate-700/60 bg-[#0f172a] mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="border-b border-slate-700/60 p-6 md:border-b-0 md:border-r">
+              <div className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-400">Quote</div>
               <div className="text-2xl font-black">{quote.title}</div>
             </div>
-            <div className="p-4">
-              <div className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">Total</div>
-              <div className="text-3xl font-black text-sky-300">${total.toLocaleString()}</div>
+            <div className="p-6">
+              <div className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-400">Total</div>
+              <div className="text-3xl font-black text-sky-400">${total.toLocaleString()}</div>
             </div>
           </div>
 
-          <div className="border-t border-slate-700 p-4">
-            <div className="mb-4 grid grid-cols-[1fr_2fr] gap-4 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+          <div className="border-t border-slate-700/60 p-6">
+            <div className="mb-4 grid grid-cols-[1fr_2fr] gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
               <div>Line</div>
-              <div>Customer Comment</div>
+              <div>Customer Comment (Discount Request)</div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {lines.map((line) => (
-                <div key={line.id} className="grid grid-cols-[1fr_2fr] gap-4 rounded-xl border border-slate-700 bg-slate-800/80 p-3">
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-slate-900 px-3 py-2">
-                    <span className="font-bold text-white">{line.productNameSnapshot}</span>
-                    <label className="text-xs uppercase tracking-[0.2em] text-slate-400">{line.quantity}x</label>
+                <div key={line.id} className="grid grid-cols-[1fr_2fr] gap-4">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+                    <span className="font-semibold text-sm">{line.productNameSnapshot}</span>
+                    <span className="text-xs font-bold text-slate-500">{line.quantity}X</span>
                   </div>
-                  <div className="flex gap-3">
+                  
+                  <div className="flex gap-2">
                     <input
-                      value={line.discount ?? 0}
-                      onChange={(e) => handleDiscountChange(line.id, e.target.value)}
-                      className="w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 font-bold text-white outline-none focus:border-sky-400"
-                      placeholder="Discount %"
-                      type="number"
-                      min={0}
-                      max={100}
-                      disabled={quote.status === 'confirmed' || quote.status === 'paid'}
+                      type="text"
+                      value={line.inputDiscount}
+                      onChange={(e) => handleLineDiscountChange(line.id, e.target.value)}
+                      onBlur={() => handleLineDiscountBlur(line.id)}
+                      disabled={isNegotiationLocked}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-sky-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="0"
                     />
                     <button
                       type="button"
-                      onClick={() => handleDiscountChange(line.id, String(Math.max(0, Number(line.discount ?? 0) - 5)))}
-                      className="rounded-xl border border-slate-600 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-slate-200"
-                      disabled={quote.status === 'confirmed' || quote.status === 'paid'}
+                      onClick={() => {
+                         const current = Number(line.inputDiscount) || 0;
+                         handleLineDiscountChange(line.id, String(Math.max(0, current - 5)));
+                         handleLineDiscountBlur(line.id);
+                      }}
+                      disabled={isNegotiationLocked}
+                      className="shrink-0 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-xs font-bold text-slate-300 hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      -5%
+                      - 5 %
                     </button>
                   </div>
                 </div>
@@ -316,32 +261,29 @@ export default function PortalQuotationNegotiationPage() {
             </div>
           </div>
 
-          <div className="border-t border-slate-700 p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm font-bold text-slate-300">Counter discount proposal</div>
-              <div className="text-xs uppercase tracking-[0.25em] text-slate-500">Live review</div>
+          <div className="border-t border-slate-700/60 p-6">
+            <div className="mb-3 flex justify-between">
+              <label className="text-xs font-bold text-slate-400">Counter discount proposal</label>
+              <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">Live Review</span>
             </div>
             <div className="flex gap-3">
               <input
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                type="number"
-                min={0}
-                max={100}
+                type="text"
+                value={overallDiscount}
+                onChange={(e) => {
+                  if (e.target.value === '' || /^\d+$/.test(e.target.value)) {
+                    setOverallDiscount(e.target.value);
+                  }
+                }}
+                disabled={isNegotiationLocked}
                 placeholder="e.g. 10"
-                className="w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-3 font-bold text-white outline-none focus:border-sky-400"
-                disabled={quote.status === 'confirmed' || quote.status === 'paid'}
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm font-semibold outline-none focus:border-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 type="button"
-                onClick={() => {
-                  const value = Number(discount ?? 0);
-                  const next = Number.isFinite(value) ? value : 0;
-                  setLines((current) => current.map((line) => ({ ...line, discount: next })));
-                  setDiscount('');
-                }}
-                className="rounded-xl border border-sky-400 bg-sky-500/20 px-4 py-3 text-sm font-black text-sky-100 disabled:opacity-50"
-                disabled={quote.status === 'confirmed' || quote.status === 'paid'}
+                onClick={handleApplyOverallDiscount}
+                disabled={isNegotiationLocked || !overallDiscount}
+                className="rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/50 px-6 py-3 text-sm font-bold hover:bg-sky-500/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Apply
               </button>
@@ -349,75 +291,51 @@ export default function PortalQuotationNegotiationPage() {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+        <div className="grid gap-6 md:grid-cols-[1fr_300px]">
+          <div className="rounded-2xl border border-slate-700/60 bg-[#0f172a] p-6">
             <div className="mb-4 flex items-center justify-between">
-              <div className="text-lg font-black">Customer Comment</div>
-              <button className="rounded-xl border border-slate-600 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-slate-200">
-                Submit Request
-              </button>
+              <h2 className="font-bold">Customer Comment</h2>
             </div>
             <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
               rows={4}
               placeholder="Add a line comment or request a change"
-              className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 font-medium text-white outline-none focus:border-sky-400"
+              className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm outline-none focus:border-sky-500 mb-4"
             />
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={handleAddMessage}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-slate-800 px-4 py-2 text-sm font-black text-white"
-              >
-                <Send size={16} /> Send Comment
+            <div className="flex justify-end">
+              <button className="flex items-center gap-2 rounded-xl border border-slate-600 bg-transparent px-4 py-2 text-sm font-bold text-slate-300 hover:bg-slate-800 transition">
+                <Send size={14} /> Send Comment
               </button>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
-            <div className="mb-4 text-lg font-black">Actions</div>
+          <div className="rounded-2xl border border-slate-700/60 bg-[#0f172a] p-6">
+            <h2 className="mb-4 font-bold">Actions</h2>
             <div className="space-y-3">
-              {quote.status === 'confirmed' || quote.status === 'invoiced' ? (
-                <button
-                  type="button"
-                  onClick={handlePayment}
-                  disabled={submitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-500 bg-blue-600 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-500 disabled:opacity-70"
-                >
-                  {submitting ? <Loader2 className="animate-spin" size={16} /> : <CreditCard size={16} />}
-                  Pay Now via Razorpay
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleSubmitCounter}
-                    disabled={saving || quote.status === 'paid'}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-500 bg-sky-600/20 px-4 py-3 text-sm font-black text-sky-100 disabled:opacity-70"
-                  >
-                    {saving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-                    Submit Request
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirm}
-                    disabled={submitting || quote.status === 'paid'}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500 bg-emerald-600/20 px-4 py-3 text-sm font-black text-emerald-100 disabled:opacity-70"
-                  >
-                    {submitting ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
-                    Confirm Quotation
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={handleSubmitCounter}
+                disabled={saving || isNegotiationLocked}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-500/50 bg-sky-500/10 px-4 py-3 text-sm font-bold text-sky-400 transition hover:bg-sky-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                Submit Request
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={submitting || isConfirmationLocked}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-400 transition hover:bg-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {submitting ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                Confirm Quotation
+              </button>
             </div>
           </div>
         </div>
 
         {toast && (
-          <div className={`mt-6 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold ${toast.type === 'success' ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100' : 'border-red-500/40 bg-red-500/10 text-red-100'}`}>
-            {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-            {toast.message}
+          <div className="mt-6 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-400">
+            <CheckCircle2 size={16} /> {toast.message}
           </div>
         )}
       </div>

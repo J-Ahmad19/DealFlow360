@@ -8,6 +8,7 @@ export default function PortalSignup() {
     lastName: '',
     email: '',
     companyName: '',
+    password: '', // Added password state to satisfy the backend
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -34,7 +35,7 @@ export default function PortalSignup() {
         : res.message || 'Account created. A magic link has been sent to your email.';
 
       setMessage(nextMessage);
-      setForm({ firstName: '', lastName: '', email: '', companyName: '' });
+      setForm({ firstName: '', lastName: '', email: '', companyName: '', password: '' });
     } catch (err: any) {
       setError(err.message || 'Unable to create a customer account.');
     } finally {
@@ -121,10 +122,23 @@ export default function PortalSignup() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Password</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => handleChange('password', e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
+              placeholder="••••••••"
+              required
+              minLength={6}
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full btn-tactile btn-primary py-3.5 rounded-xl font-bold mt-2"
+            className="w-full btn-tactile btn-primary py-3.5 rounded-xl font-bold mt-2 bg-brand-500 text-white hover:bg-brand-600 transition"
           >
             {loading ? 'Creating account...' : 'Create account'}
           </button>
