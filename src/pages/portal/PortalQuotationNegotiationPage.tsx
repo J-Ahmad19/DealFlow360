@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, Loader2, Send, ShieldCheck, CreditCard } from 'lucide-react';
-import { apiFetch, ApiError } from '../../lib/api';
+import { CheckCircle2, Loader2, Send, ShieldCheck } from 'lucide-react';
+import { apiFetch } from '../../lib/api';
 
 const statusLabel: Record<string, string> = {
   draft: 'Draft',
@@ -13,17 +13,6 @@ const statusLabel: Record<string, string> = {
   confirmed: 'Confirmed',
   under_negotiation: 'Under Negotiation',
   paid: 'Paid',
-};
-
-// Helper function to load the Razorpay SDK dynamically
-const loadRazorpay = () => {
-  return new Promise((resolve) => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
 };
 
 export default function PortalQuotationNegotiationPage() {

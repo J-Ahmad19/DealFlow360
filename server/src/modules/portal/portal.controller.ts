@@ -61,14 +61,15 @@ export async function counterOffer(req: Request, res: Response, next: NextFuncti
   try {
     const { id } = req.params;
     const ctx = getCustomerContext(req);
-    const { modifications } = z.object({
+    const { modifications, comment } = z.object({
       modifications: z.array(z.object({
         lineId: z.string().uuid(),
         discount: z.number().min(0).max(100)
-      }))
+      })),
+      comment: z.string().optional()
     }).parse(req.body);
 
-    const result = await portalService.counterOffer(ctx, id, modifications);
+    const result = await portalService.counterOffer(ctx, id, modifications, comment);
     res.json({ data: result, message: 'Counter-offer submitted and evaluated' });
   } catch (err) {
     next(err);
