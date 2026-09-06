@@ -111,7 +111,7 @@ export default function AppLayout() {
           <Route
             path="products"
             element={
-              <PermissionGuard role={['admin', 'sales_manager', 'sales_rep']} fallback={<AccessDenied module="Product Catalog" />}>
+              <PermissionGuard role={['admin']} fallback={<AccessDenied module="Product Catalog" />}>
                 <ProductsPage />
               </PermissionGuard>
             }
@@ -121,7 +121,7 @@ export default function AppLayout() {
           <Route
             path="reports"
             element={
-              <PermissionGuard role={['admin', 'sales_manager', 'finance', 'sales_rep']} fallback={<AccessDenied module="Commercial Reports" />}>
+              <PermissionGuard role={['admin']} fallback={<AccessDenied module="Commercial Reports" />}>
                 <ReportsPage />
               </PermissionGuard>
             }

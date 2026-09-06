@@ -13,13 +13,14 @@ const discountEngine = new DiscountEngine(discountRepo);
 const approvalEngine = new ApprovalRoutingEngine();
 const portalService = new PortalService(discountEngine, approvalEngine);
 
-// Mock extraction of customer context from request (usually set by middleware)
 function getCustomerContext(req: Request): CustomerContext {
-  // In a real app: return req.user as CustomerContext
-  // For the sake of this endpoint, we simulate it via headers or standard auth
-  const companyId = req.headers['x-company-id'] as string;
-  const contactId = req.headers['x-contact-id'] as string;
-  return { companyId, contactId };
+  const customer = (req as any).customer as CustomerContext | undefined;
+
+  if (!customer?.companyId || !customer?.contactId) {
+    throw new Error('Customer authentication required');
+  }
+
+  return customer;
 }
 
 export async function getQuotation(req: Request, res: Response, next: NextFunction): Promise<void> {

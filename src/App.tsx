@@ -6,6 +6,7 @@ import PortalLogin from './pages/portal/PortalLogin';
 import PortalSignup from './pages/portal/PortalSignup';
 import PortalVerify from './pages/portal/PortalVerify';
 import PortalDashboard from './pages/portal/PortalDashboard';
+import PortalQuotationNegotiationPage from './pages/portal/PortalQuotationNegotiationPage';
 import { AuthProvider, useAuth, type UserRole } from './contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -103,6 +104,14 @@ export default function App() {
             element={
               <PortalProtectedRoute>
                 <PortalDashboard />
+              </PortalProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/quotations/:id"
+            element={
+              <PortalProtectedRoute>
+                <PortalQuotationNegotiationPage />
               </PortalProtectedRoute>
             }
           />

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { db } from '../../db/client.js';
-import { dealHealthAlerts } from '../../db/schema/dealflow.js';
+import { dealHealthAlerts, notifications } from '../../db/schema/dealflow.js';
 import { and, count, desc, eq } from 'drizzle-orm';
 import { AuditService } from '../../core/audit/audit.service.js';
 import { AuditAction } from '../../core/audit/audit.types.js';
@@ -89,10 +89,8 @@ export async function escalateAlert(req: Request, res: Response, next: NextFunct
       return;
     }
 
-    // Invalidate dashboard health cache on escalation
     await invalidatePattern('dealflow:dashboard:health:*');
 
-    // Audit the escalation
     if (actorId) {
       await AuditService.log({
         actorId,
@@ -106,6 +104,48 @@ export async function escalateAlert(req: Request, res: Response, next: NextFunct
     }
 
     res.json({ data: updated, message: 'Alert escalated to critical' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function nudgeAlert(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const actorId = (req as any).user?.id;
+
+    const [alert] = await db.select().from(dealHealthAlerts).where(eq(dealHealthAlerts.id, id));
+    if (!alert) {
+      res.status(404).json({ error: 'Alert not found' });
+      return;
+    }
+
+    const [notification] = await db.insert(notifications).values({
+      recipientId: actorId || null,
+      type: 'deal_health_nudge',
+      title: 'Deal health nudge',
+      message: `Action required: ${alert.type.toLowerCase().replace(/_/g, ' ')} alert for quotation ${alert.quotationId.slice(0, 8).toUpperCase()} requires follow-up.`,
+      status: 'pending',
+    }).returning();
+
+    await invalidatePattern('dealflow:dashboard:health:*');
+
+    if (actorId) {
+      await AuditService.log({
+        actorId,
+        entityType: 'deal',
+        entityId: alert.quotationId,
+        action: 'deal.health_alert_nudged',
+        before: { status: 'unresolved' },
+        after: { status: 'nudge_sent', notificationId: notification?.id ?? null },
+        ...AuditService.fromRequest(req),
+      });
+    }
+
+    res.json({
+      data: { alertId: id, notificationId: notification?.id ?? null, quotationId: alert.quotationId },
+      message: 'Deal health nudge triggered successfully.',
+    });
   } catch (err) {
     next(err);
   }

@@ -94,8 +94,23 @@ export async function processPayment(req: Request, res: Response, next: NextFunc
 
 export async function modifySubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    // Basic modify placeholder - in reality this would prorate and update period etc.
-    res.json({ message: 'Subscription modified' });
+    const { id } = req.params;
+    const { idempotencyKey, interval } = z.object({
+      idempotencyKey: z.string().min(1),
+      interval: z.enum(['monthly', 'quarterly', 'yearly']).optional(),
+    }).parse(req.body);
+
+    const updated = await subscriptionService.modifySubscription(id, idempotencyKey, interval);
+    res.json({ data: updated, message: 'Subscription modified successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await subscriptionService.getSubscriptionDetail(req.params.id);
+    res.json({ data });
   } catch (err) {
     next(err);
   }

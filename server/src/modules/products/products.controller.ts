@@ -89,4 +89,13 @@ export const ProductsController = {
       next(err);
     }
   },
+
+  deleteProduct: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const product = await ProductsService.deleteProduct(req.params.id, req.user!.id);
+      sendSuccess(res, { id: product.id, deleted: true });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

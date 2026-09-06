@@ -12,6 +12,7 @@ export default function ApprovalDetail() {
   const [approval, setApproval] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadDetail() {
@@ -28,15 +29,28 @@ export default function ApprovalDetail() {
   }, [id]);
 
   const handleAction = async (action: 'approve' | 'revise' | 'reject') => {
+    if (!id) return;
+
     setActionLoading(true);
+    setStatusMessage(null);
     try {
-      await apiFetch(`/approvals/${id}/action`, {
+      const result = await apiFetch(`/approvals/${id}/action`, {
         method: 'POST',
-        body: JSON.stringify({ action, note: 'Actioned via Approvals UI' })
+        body: JSON.stringify({ action, note: `Reviewed by ${hasRole(['admin']) ? 'admin' : 'approver'} via approval screen.` })
       });
-      navigate('/app/approvals');
-    } catch (err) {
+
+      const payload = result?.data || result;
+      setStatusMessage(payload?.message || `Approval ${action} recorded successfully.`);
+
+      const refreshed = await apiFetch(`/approvals/${id}`);
+      setApproval(refreshed);
+
+      setTimeout(() => {
+        navigate('/app/approvals');
+      }, 1200);
+    } catch (err: any) {
       console.error('Failed action:', err);
+      setStatusMessage(err.message || 'Unable to complete approval action.');
     } finally {
       setActionLoading(false);
     }
@@ -61,15 +75,16 @@ export default function ApprovalDetail() {
     );
   }
 
-  const quoteId = approval.id.substring(0, 4).toUpperCase();
-  const customerName = approval.customerName || 'Unknown Customer';
-  
-  // Calculate dynamic risk
-  const isHighRisk = approval.riskScore > 60;
-  const isMediumRisk = approval.riskScore > 30 && approval.riskScore <= 60;
-  
-  // Only managers/finance/admins can see the action buttons
+  const quoteId = String(approval?.id || '').substring(0, 4).toUpperCase();
+  const customerName = approval?.customerName || 'Unknown Customer';
+  const riskScore = Number(approval?.riskScore ?? 0);
+  const isHighRisk = riskScore > 60;
+  const isMediumRisk = riskScore > 30 && riskScore <= 60;
   const canApprove = hasRole(['admin', 'sales_manager', 'finance']);
+  const approvalSteps = [
+    { label: 'Sales Manager', active: riskScore > 0 || !!approval?.lines?.length },
+    { label: 'Finance', active: riskScore > 50 },
+  ].filter((step) => step.active || step.label === 'Sales Manager');
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 card-tactile bg-white p-6 sm:p-10 min-h-[calc(100vh-4rem)] relative mb-12">
@@ -93,11 +108,11 @@ export default function ApprovalDetail() {
       {/* Badges */}
       <div className="flex gap-4">
         <div className={`px-5 py-2.5 rounded-xl border-2 border-b-4 font-black uppercase tracking-wider text-sm ${
-          isHighRisk ? 'bg-red-50 border-red-200 text-red-600' : 
-          isMediumRisk ? 'bg-amber-50 border-amber-200 text-amber-600' : 
+          isHighRisk ? 'bg-red-50 border-red-200 text-red-600' :
+          isMediumRisk ? 'bg-amber-50 border-amber-200 text-amber-600' :
           'bg-brand-50 border-brand-200 text-brand-600'
         }`}>
-          Blended Risk: {isHighRisk ? 'HIGH' : isMediumRisk ? 'MEDIUM' : 'LOW'}
+          Blended Risk: {riskScore}% {isHighRisk ? 'HIGH' : isMediumRisk ? 'MEDIUM' : 'LOW'}
         </div>
         <div className="bg-blue-50 border-blue-200 text-blue-600 border-2 border-b-4 px-5 py-2.5 rounded-xl font-black uppercase tracking-wider text-sm">
           Customer Tier: Gold
@@ -146,37 +161,28 @@ export default function ApprovalDetail() {
 
       {/* Progress Tracker Flow */}
       <div className="py-10 my-8 flex items-center justify-between relative px-4">
-        {/* Connecting Background Line */}
         <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-1 bg-slate-200 z-0"></div>
-        
-        {/* Step 1 */}
+
         <div className="relative z-10 flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center border-4 border-white shadow-sm">
             <CheckCircle size={20} />
           </div>
           <span className="text-xs font-black uppercase tracking-widest text-slate-900 bg-white px-2">Submitted</span>
         </div>
-        
-        {/* Step 2 */}
-        <div className="relative z-10 flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center border-4 border-white shadow-sm">
-             <div className="w-4 h-4 bg-white rounded-full" />
-          </div>
-          <span className="text-xs font-black uppercase tracking-widest text-slate-900 bg-white px-2">Sales Manager</span>
-        </div>
 
-        {/* Step 3 */}
-        <div className="relative z-10 flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center border-4 border-white">
-             <div className="w-4 h-4 bg-slate-400 rounded-full" />
+        {approvalSteps.map((step, index) => (
+          <div key={step.label} className="relative z-10 flex flex-col items-center gap-3">
+            <div className={`w-12 h-12 rounded-full ${index === 0 ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-400'} flex items-center justify-center border-4 border-white shadow-sm`}>
+              <div className={`w-4 h-4 rounded-full ${index === 0 ? 'bg-white' : 'bg-slate-400'}`} />
+            </div>
+            <span className={`text-xs font-black uppercase tracking-widest bg-white px-2 ${index === 0 ? 'text-slate-900' : 'text-slate-400'}`}>
+              {step.label}
+            </span>
           </div>
-          <span className="text-xs font-black uppercase tracking-widest text-slate-400 bg-white px-2">Finance</span>
-        </div>
+        ))}
 
-        {/* Step 4 */}
         <div className="relative z-10 flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center border-4 border-white">
-          </div>
+          <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center border-4 border-white"></div>
           <span className="text-xs font-black uppercase tracking-widest text-slate-400 bg-white px-2">Confirmed</span>
         </div>
       </div>
@@ -195,24 +201,19 @@ export default function ApprovalDetail() {
               </tr>
             </thead>
             <tbody className="text-slate-900 divide-y-2 divide-slate-50">
-              {/* Mocking audit log data to perfectly match wireframe */}
               <tr className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-5 font-bold">J. Rao</td>
+                <td className="px-6 py-5 font-bold">{approval.ownerName || 'System'}</td>
                 <td className="px-6 py-5 font-black text-slate-900">Submitted</td>
-                <td className="px-6 py-5 font-bold text-slate-500">Aug 20</td>
-                <td className="px-6 py-5 font-bold text-slate-500">Initial 12% discount</td>
+                <td className="px-6 py-5 font-bold text-slate-500">
+                  {approval.createdAt ? new Date(approval.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—'}
+                </td>
+                <td className="px-6 py-5 font-bold text-slate-500">{approval.title || 'Submitted for review'}</td>
               </tr>
               <tr className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-5 font-bold">M. Shah</td>
-                <td className="px-6 py-5 font-black text-slate-900">Returned</td>
-                <td className="px-6 py-5 font-bold text-slate-500">Aug 21</td>
-                <td className="px-6 py-5 font-bold text-slate-500">Requested justification</td>
-              </tr>
-              <tr className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-5 font-bold">J. Rao</td>
-                <td className="px-6 py-5 font-black text-slate-900">Resubmitted</td>
-                <td className="px-6 py-5 font-bold text-slate-500">Aug 22</td>
-                <td className="px-6 py-5 font-bold text-slate-500">Added margin note</td>
+                <td className="px-6 py-5 font-bold">Approver</td>
+                <td className="px-6 py-5 font-black text-slate-900">{statusMessage ? 'Reviewed' : 'Pending'}</td>
+                <td className="px-6 py-5 font-bold text-slate-500">{new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td>
+                <td className="px-6 py-5 font-bold text-slate-500">{statusMessage || 'Awaiting decision'}</td>
               </tr>
             </tbody>
           </table>
@@ -220,6 +221,12 @@ export default function ApprovalDetail() {
       </div>
 
       {/* Action Buttons */}
+      {statusMessage && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+          {statusMessage}
+        </div>
+      )}
+
       {canApprove && (
         <div className="flex flex-wrap items-center gap-4 pt-8 mt-8 border-t-2 border-slate-100">
           <button
@@ -228,25 +235,25 @@ export default function ApprovalDetail() {
             className="btn-tactile btn-primary px-8 py-4 text-base flex items-center justify-center gap-2 rounded-2xl font-black"
           >
             <CheckCircle size={20} />
-            Approve
+            {actionLoading ? 'Processing...' : 'Approve'}
           </button>
-          
+
           <button
             onClick={() => handleAction('revise')}
             disabled={actionLoading}
             className="btn-tactile bg-[#e67e22] border-b-4 border-[#d35400] text-white hover:bg-[#f39c12] px-8 py-4 text-base flex items-center justify-center gap-2 rounded-2xl font-black transition-all"
           >
             <RotateCcw size={20} />
-            Return for Revision
+            {actionLoading ? 'Processing...' : 'Return for Revision'}
           </button>
-          
+
           <button
             onClick={() => handleAction('reject')}
             disabled={actionLoading}
             className="btn-tactile bg-[#ff7675] border-b-4 border-[#d63031] text-white hover:bg-[#ff9f43] px-8 py-4 text-base flex items-center justify-center gap-2 rounded-2xl font-black transition-all"
           >
             <XCircle size={20} />
-            Reject
+            {actionLoading ? 'Processing...' : 'Reject'}
           </button>
         </div>
       )}

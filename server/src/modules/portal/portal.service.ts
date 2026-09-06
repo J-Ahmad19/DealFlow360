@@ -49,23 +49,101 @@ export class PortalService {
     return thread;
   }
 
-  async confirm(customerCtx: CustomerContext, quotationId: string) {
-    const canView = await CustomerPolicy.canViewQuotation(customerCtx, quotationId);
-    if (!canView) throw new UnauthorizedError('Not authorized');
+  async confirm(customerCtx: CustomerContext, quotationId: string, modifications: { lineId: string, discount: number }[] = []) {
+    return await db.transaction(async (tx) => {
+      const canView = await CustomerPolicy.canViewQuotation(customerCtx, quotationId);
+      if (!canView) throw new UnauthorizedError('Not authorized');
 
-    const [updated] = await db.update(quotations)
-      .set({ status: 'confirmed' })
-      .where(eq(quotations.id, quotationId))
-      .returning();
+      const [quotation] = await tx.select().from(quotations).where(eq(quotations.id, quotationId));
+      if (!quotation) throw new Error('Quotation not found');
 
-    await AuditService.log({
-      actorId: customerCtx.contactId,
-      entityType: 'quotation',
-      entityId: quotationId,
-      action: AuditAction.PORTAL_QUOTATION_CONFIRMED,
-      after: { status: 'confirmed' },
+      const lines = await tx.select().from(quotationLines).where(eq(quotationLines.quotationId, quotationId));
+      if (lines.length === 0) throw new Error('Quotation has no lines to confirm');
+
+      const productIds = lines.map((line) => line.productId);
+      const productsList = await tx.select().from(products).where(inArray(products.id, productIds));
+      const productMap = new Map(productsList.map((product) => [product.id, product]));
+
+      let totalSubtotal = 0;
+      let totalDiscount = 0;
+      let totalMarginValue = 0;
+
+      const evalLines = lines.map((line) => {
+        const adjustment = modifications.find((item) => item.lineId === line.id);
+        const product = productMap.get(line.productId)!;
+        const newDiscount = adjustment ? adjustment.discount : line.discount;
+        const subtotal = line.quantity * line.unitPrice;
+        const discountAmount = Math.floor((subtotal * newDiscount) / 100);
+        const total = subtotal - discountAmount + Math.floor((subtotal * (line.taxRate ?? 0)) / 100);
+
+        totalSubtotal += subtotal;
+        totalDiscount += discountAmount;
+
+        const effectiveUnitPrice = line.unitPrice * (1 - newDiscount / 100);
+        totalMarginValue += (effectiveUnitPrice - (product.cost ?? 0)) * line.quantity;
+
+        tx.update(quotationLines)
+          .set({ discount: newDiscount, subtotal, total })
+          .where(eq(quotationLines.id, line.id))
+          .execute();
+
+        return {
+          id: line.id,
+          categoryId: product.categoryId,
+          unitPrice: line.unitPrice,
+          quantity: line.quantity,
+          discountPercent: newDiscount,
+          marginPercent: effectiveUnitPrice > 0 ? ((effectiveUnitPrice - (product.cost ?? 0)) / effectiveUnitPrice) * 100 : 0,
+        };
+      });
+
+      const overallMargin = totalSubtotal > 0 ? (totalMarginValue / totalSubtotal) * 100 : 0;
+      const riskResult = await this.discountEngine.evaluateQuotation({
+        customerId: quotation.customerId!,
+        lines: evalLines,
+      });
+      const requiredApprovals = await this.approvalEngine.getApprovalRouting(riskResult.riskScore);
+
+      const nextStatus = requiredApprovals.length > 0 ? 'pending_approval' : 'fulfillment';
+
+      if (requiredApprovals.length > 0) {
+        await tx.delete(approvals).where(eq(approvals.quotationId, quotationId));
+        await tx.insert(approvals).values(
+          requiredApprovals.map((route) => ({
+            quotationId,
+            approverRole: route.approverRole,
+            sequence: route.sequence,
+            riskScore: riskResult.riskScore,
+            status: 'pending',
+          }))
+        );
+      } else {
+        await tx.delete(approvals).where(eq(approvals.quotationId, quotationId));
+      }
+
+      const [updated] = await tx.update(quotations)
+        .set({
+          subtotal: totalSubtotal,
+          discount: totalDiscount,
+          margin: Math.floor(overallMargin),
+          riskScore: riskResult.riskScore,
+          status: nextStatus,
+        })
+        .where(eq(quotations.id, quotationId))
+        .returning();
+
+      await AuditService.log({
+        actorId: customerCtx.contactId,
+        entityType: 'quotation',
+        entityId: quotationId,
+        action: AuditAction.PORTAL_QUOTATION_CONFIRMED,
+        reason: nextStatus === 'pending_approval' ? 'Customer confirmed final terms, approval required' : 'Customer confirmed final terms and moved to fulfillment',
+        before: { status: quotation.status, riskScore: quotation.riskScore },
+        after: { status: nextStatus, riskScore: riskResult.riskScore },
+      });
+
+      return { ...updated, status: nextStatus };
     });
-    return updated;
   }
 
   async counterOffer(customerCtx: CustomerContext, quotationId: string, modifications: { lineId: string, discount: number }[]) {

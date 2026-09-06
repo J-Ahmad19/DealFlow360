@@ -96,9 +96,12 @@ describe('Recommendation API', () => {
     expect(recommendations[0].productId).toBe(productAId);
     expect(recommendations[0].score).toBe(15);
     expect(recommendations[0].promoted).toBe(true);
+    expect(recommendations[0].promotionTag).toBe('Promo');
+    expect(recommendations[0].price).toBe(10000);
 
     expect(recommendations[1].productId).toBe(productBId);
     expect(recommendations[1].score).toBe(10);
     expect(recommendations[1].promoted).toBe(false);
+    expect(recommendations[1].promotionTag).toBeUndefined();
   });
 });

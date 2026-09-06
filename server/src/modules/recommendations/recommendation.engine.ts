@@ -11,6 +11,8 @@ export interface Recommendation {
   score: number;
   marginDelta: number;
   promoted: boolean;
+  price: number;
+  promotionTag?: string;
 }
 
 export class RecommendationEngine {
@@ -100,6 +102,8 @@ export class RecommendationEngine {
           score,
           marginDelta: margin - averageQuotationMargin,
           promoted: product.promoted,
+          price: Number(product.price) || 0,
+          promotionTag: product.promoted ? 'Promo' : undefined,
         });
       }
 

@@ -53,4 +53,12 @@ export const ProductsRepository = {
       .returning();
     return product;
   },
+
+  deleteProduct: async (id: string) => {
+    const [product] = await db
+      .delete(products)
+      .where(eq(products.id, id))
+      .returning({ id: products.id });
+    return product;
+  },
 };

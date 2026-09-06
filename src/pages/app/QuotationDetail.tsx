@@ -12,6 +12,7 @@ export default function QuotationDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lines, setLines] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
   const showToast = useCallback((type: 'success' | 'error', message: string) => {
     setToast({ type, message });
@@ -23,7 +24,7 @@ export default function QuotationDetail() {
       try {
         const data = await apiFetch(`/quotations/${id}`);
         setQuotation(data);
-        
+
         if (data.lines && data.lines.length > 0) {
           setLines(data.lines);
         } else {
@@ -33,6 +34,10 @@ export default function QuotationDetail() {
             { id: '3', productId: 'mock-uuid-3', productNameSnapshot: 'Extended Warranty', quantity: 1, unitPrice: 180, discount: 10, limit: 15 },
           ]);
         }
+
+        const recommendationsPayload = await apiFetch(`/quotations/${id}/recommendations`);
+        const list = Array.isArray(recommendationsPayload?.data) ? recommendationsPayload.data : [];
+        setRecommendations(list);
       } catch (err) {
         console.error('Failed to load quotation details:', err);
       } finally {
@@ -245,20 +250,56 @@ export default function QuotationDetail() {
         <h3 className="text-xl font-black text-secondary-500 mb-6">
           Upsell and Cross-Sell Suggestions
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <button className="card-tactile bg-white border-2 border-slate-200 hover:border-secondary-400 p-6 text-left transition-all group flex flex-col">
-            <span className="font-black text-slate-900 group-hover:text-secondary-500 transition-colors">+ Wireless Mouse</span>
-            <span className="text-sm font-bold text-slate-500 mt-2">Margin +$18</span>
-          </button>
-          <button className="card-tactile bg-white border-2 border-slate-200 hover:border-secondary-400 p-6 text-left transition-all group flex flex-col">
-            <span className="font-black text-slate-900 group-hover:text-secondary-500 transition-colors">+ Docking Station</span>
-            <span className="text-sm font-bold text-brand-500 mt-2">Promo: 12% off</span>
-          </button>
-          <button className="card-tactile bg-white border-2 border-slate-200 hover:border-secondary-400 p-6 text-left transition-all group flex flex-col">
-            <span className="font-black text-slate-900 group-hover:text-secondary-500 transition-colors">+ Care Plan 2yr</span>
-            <span className="text-sm font-bold text-slate-500 mt-2">Margin +$46</span>
-          </button>
-        </div>
+        {recommendations.length === 0 ? (
+          <div className="text-sm font-bold text-slate-500 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6">
+            No recommendations available for this quotation yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {recommendations.slice(0, 3).map((item) => (
+              <div key={item.productId} className="card-tactile bg-white border-2 border-slate-200 hover:border-secondary-400 p-6 text-left transition-all group flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-black text-slate-900 group-hover:text-secondary-500 transition-colors">+ {item.productName}</span>
+                  {item.promotionTag && (
+                    <span className="inline-flex items-center rounded-full bg-brand-50 border border-brand-200 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-brand-600">
+                      {item.promotionTag}
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm font-bold text-slate-500">Margin {item.marginDelta >= 0 ? '+' : ''}${Math.round(item.marginDelta || 0)}</span>
+                <div className="flex items-center justify-between gap-3 mt-auto pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextLines = [...lines, {
+                        id: crypto.randomUUID(),
+                        productId: item.productId,
+                        productNameSnapshot: item.productName,
+                        quantity: 1,
+                        unitPrice: item.price,
+                        discount: 0,
+                        limit: 15,
+                      }];
+                      setLines(nextLines);
+                      setQuotation((prev: any) => ({ ...prev, amount: (prev?.amount || 0) + item.price }));
+                      showToast('success', `${item.productName} added to quote.`);
+                    }}
+                    className="btn-tactile btn-primary px-4 py-2 text-xs rounded-xl font-black"
+                  >
+                    Add to Quote
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-tactile bg-white border-2 border-slate-200 text-slate-700 px-4 py-2 text-xs rounded-xl font-black"
+                    onClick={() => setRecommendations((prev) => prev.filter((r) => r.productId !== item.productId))}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}

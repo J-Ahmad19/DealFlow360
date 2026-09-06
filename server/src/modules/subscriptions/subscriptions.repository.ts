@@ -31,6 +31,7 @@ export const SubscriptionsRepository = {
         id: subscriptions.id,
         status: subscriptions.status,
         interval: subscriptions.interval,
+        currentPeriodStart: subscriptions.currentPeriodStart,
         currentPeriodEnd: subscriptions.currentPeriodEnd,
         productName: products.name,
         price: products.price,
@@ -60,10 +61,16 @@ export const SubscriptionsRepository = {
       .innerJoin(products, eq(quotationLines.productId, products.id))
       .where(eq(quotationLines.quotationId, sub[0].quotationId));
 
+    const nextBillingDate = sub[0].currentPeriodEnd || new Date();
+
     return {
       subscription: sub[0],
       oneTimeLines: lines.filter(l => !l.isRecurring),
       recurringLines: lines.filter(l => l.isRecurring),
+      billingSchedule: {
+        nextBillingDate,
+        interval: sub[0].interval || 'monthly',
+      },
     };
   }
 };

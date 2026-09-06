@@ -28,6 +28,19 @@ export const ApprovalsController = {
   },
 
   action: async (req: Request, res: Response) => {
-    res.json({ success: true, message: `Action ${req.body.action} recorded.` });
+    try {
+      const user = (req as any).user;
+      const action = String(req.body.action || '').toLowerCase();
+      const note = String(req.body.note || '').trim();
+
+      if (!['approve', 'reject', 'revise'].includes(action)) {
+        return res.status(400).json({ error: 'Invalid approval action.' });
+      }
+
+      const result = await ApprovalsService.action(req.params.id, user.id, user.role, action, note);
+      return res.json({ success: true, data: result });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
   }
 };

@@ -31,8 +31,8 @@ const navItems: NavItem[] = [
   { label: 'Subscriptions', path: '/app/subscriptions', icon: Repeat, role: ['admin', 'finance', 'sales_rep'] },
   { label: 'Invoices', path: '/app/billing', icon: Receipt, role: ['admin', 'sales_manager', 'finance', 'sales_rep'] },
   { label: 'Deal Health', path: '/app/deal-health', icon: Activity },
-  { label: 'Reports', path: '/app/reports', icon: BarChart, role: ['admin', 'sales_manager', 'finance', 'sales_rep'] },
-  { label: 'Product', path: '/app/products', icon: Box, role: ['admin', 'sales_manager', 'sales_rep'] },
+  { label: 'Reports', path: '/app/reports', icon: BarChart, role: ['admin'] },
+  { label: 'Product', path: '/app/products', icon: Box, role: ['admin'] },
 ];
 
 export default function GlobalSideNav() {

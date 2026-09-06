@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { jest } from '@jest/globals';
 import { db } from '../src/db/client.js';
 import {
   quotations,
@@ -10,9 +11,12 @@ import {
   approvals,
   dealHealthAlerts,
   fulfillments,
+  notifications,
+  auditLogs,
 } from '../src/db/schema/dealflow.js';
 import { eq } from 'drizzle-orm';
 import { DealHealthEngine } from '../src/modules/dealHealth/deal-health.engine.js';
+import { nudgeAlert } from '../src/modules/dealHealth/deal-health.controller.js';
 
 // Use faster thresholds for tests
 const engine = new DealHealthEngine({
@@ -98,6 +102,8 @@ describe('DealHealthEngine', () => {
         await db.delete(quotationLines).where(eq(quotationLines.quotationId, item.id));
         await db.delete(quotations).where(eq(quotations.id, item.id));
       } else if (item.table === 'users') {
+        await db.delete(notifications).where(eq(notifications.recipientId, item.id));
+        await db.delete(auditLogs).where(eq(auditLogs.actorId, item.id));
         await db.delete(users).where(eq(users.id, item.id));
       } else if (item.table === 'companies') {
         await db.delete(companies).where(eq(companies.id, item.id));
@@ -202,5 +208,32 @@ describe('DealHealthEngine', () => {
 
     expect(stalledAfterSecond).toBe(1); // Still just 1, not 2
     expect(second.skipped).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should create a nudge notification when a deal-health alert is actioned', async () => {
+    const alertQuoteId = await makeQuotation({ status: 'draft', lastActivityAt: new Date(Date.now() - 3 * 60 * 60 * 1000) });
+    const [alert] = await db.insert(dealHealthAlerts).values({
+      quotationId: alertQuoteId,
+      type: 'STALLED',
+      severity: 'high',
+      score: 80,
+      reason: 'No activity for 3 hours',
+    }).returning();
+
+    const req: any = {
+      params: { id: alert.id },
+      user: { id: ownerId, role: 'sales_manager' },
+    };
+    const res: any = {
+      json: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    };
+
+    await nudgeAlert(req, res, jest.fn());
+
+    expect(res.status).not.toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('nudge'),
+    }));
   });
 });

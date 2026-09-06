@@ -55,13 +55,15 @@ export interface AuditInput {
 // ─── Request Context Extraction ────────────────────────────────────────────────
 
 export function extractRequestContext(req: Request): Pick<AuditInput, 'ipAddress' | 'userAgent'> {
+  const headers = req.headers ?? {};
+
   // Respect X-Forwarded-For for apps behind a proxy/load balancer
-  const forwarded = req.headers['x-forwarded-for'];
+  const forwarded = headers['x-forwarded-for'];
   const ipAddress = typeof forwarded === 'string'
     ? forwarded.split(',')[0].trim()
-    : req.socket.remoteAddress ?? 'unknown';
+    : req.socket?.remoteAddress ?? 'unknown';
 
-  const userAgent = (req.headers['user-agent'] ?? 'unknown').slice(0, 512);
+  const userAgent = (headers['user-agent'] ?? 'unknown').slice(0, 512);
 
   return { ipAddress, userAgent };
 }

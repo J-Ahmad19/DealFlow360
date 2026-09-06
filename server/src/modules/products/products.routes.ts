@@ -53,6 +53,12 @@ router.patch(
   ProductsController.updateProduct
 );
 
+router.delete(
+  '/:id',
+  requireRole(['admin']),
+  ProductsController.deleteProduct
+);
+
 // Export both formats to ensure module resolution compatibility with Vite/TSX
 export const productsRoutes = router;
 export default router;

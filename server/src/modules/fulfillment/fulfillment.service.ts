@@ -44,16 +44,22 @@ export class FulfillmentService {
 
       for (const alloc of plan.allocations) {
         if (!warehouseSummary[alloc.warehouseId]) {
-          warehouseSummary[alloc.warehouseId] = { warehouseName: alloc.warehouseName, quantity: 0, cost: 0, shipments: 1 };
+          warehouseSummary[alloc.warehouseId] = { warehouseName: alloc.warehouseName, quantity: 0, cost: 0, shipments: 0 };
         }
+
+        const shipmentCount = Math.max(1, Math.ceil((alloc.quantity || 0) / 25));
         warehouseSummary[alloc.warehouseId].quantity += alloc.quantity;
         warehouseSummary[alloc.warehouseId].cost += alloc.cost;
+        warehouseSummary[alloc.warehouseId].shipments += shipmentCount;
       }
     }
 
     return {
       order: q[0],
-      splits: Object.values(warehouseSummary),
+      splits: Object.values(warehouseSummary).map(split => ({
+        ...split,
+        shipments: Math.max(1, split.shipments),
+      })),
       hasBackorder
     };
   }

@@ -52,7 +52,7 @@ describe('Customer Negotiation Portal', () => {
     contactId = randomUUID();
     await db.insert(users).values({
       id: contactId,
-      email: 'contact@portaltest.com',
+      email: `contact-${randomUUID().slice(0, 8)}@portaltest.com`,
       fullName: 'Portal Contact',
       role: 'sales_rep', // arbitrary
     });
@@ -92,6 +92,7 @@ describe('Customer Negotiation Portal', () => {
     await db.delete(quotations).where(eq(quotations.id, quotationId));
     await db.delete(approvalRules).where(eq(approvalRules.approverRole, 'sales_manager'));
     await db.delete(products).where(eq(products.id, productId));
+    await db.delete(auditLogs).where(eq(auditLogs.actorId, contactId));
     await db.delete(users).where(eq(users.id, contactId));
     await db.delete(companies).where(eq(companies.id, customerId));
     await db.delete(companies).where(eq(companies.id, otherCustomerId));
@@ -147,5 +148,74 @@ describe('Customer Negotiation Portal', () => {
     expect(requiredApprovals.length).toBeGreaterThan(0);
     expect(requiredApprovals[0].approverRole).toBe('sales_manager');
     expect(requiredApprovals[0].status).toBe('pending');
+  });
+
+  it('confirm: should trigger approval routing if final terms exceed policy thresholds', async () => {
+    const quoteId = randomUUID();
+    await db.insert(quotations).values({
+      id: quoteId,
+      title: 'Portal Confirmation Risk Quote',
+      customerId,
+      status: 'under_negotiation',
+      subtotal: 1000,
+      total: 1000,
+      riskScore: 0,
+      margin: 90,
+    });
+    const confirmLineId = randomUUID();
+    await db.insert(quotationLines).values({
+      id: confirmLineId,
+      quotationId: quoteId,
+      productId,
+      productNameSnapshot: 'Product',
+      unitPrice: 1000,
+      quantity: 1,
+      subtotal: 1000,
+      total: 1000,
+      discount: 0,
+    });
+
+    const result = await portalService.confirm(getCustomerCtx(customerId), quoteId, [{ lineId: confirmLineId, discount: 50 }]);
+
+    expect(result.status).toBe('pending_approval');
+    const requiredApprovals = await db.select().from(approvals).where(eq(approvals.quotationId, quoteId));
+    expect(requiredApprovals.length).toBeGreaterThan(0);
+
+    await db.delete(approvals).where(eq(approvals.quotationId, quoteId));
+    await db.delete(quotationLines).where(eq(quotationLines.quotationId, quoteId));
+    await db.delete(quotations).where(eq(quotations.id, quoteId));
+  });
+
+  it('confirm: should send the quote straight to fulfillment when final terms are inside policy', async () => {
+    const quoteId = randomUUID();
+    await db.insert(quotations).values({
+      id: quoteId,
+      title: 'Portal Confirmation Clean Quote',
+      customerId,
+      status: 'under_negotiation',
+      subtotal: 1000,
+      total: 1000,
+      riskScore: 0,
+      margin: 90,
+    });
+    const confirmLineId = randomUUID();
+    await db.insert(quotationLines).values({
+      id: confirmLineId,
+      quotationId: quoteId,
+      productId,
+      productNameSnapshot: 'Product',
+      unitPrice: 1000,
+      quantity: 1,
+      subtotal: 1000,
+      total: 1000,
+      discount: 0,
+    });
+
+    const result = await portalService.confirm(getCustomerCtx(customerId), quoteId, [{ lineId: confirmLineId, discount: 5 }]);
+
+    expect(result.status).toBe('fulfillment');
+
+    await db.delete(quotationLines).where(eq(quotationLines.quotationId, quoteId));
+    await db.delete(quotations).where(eq(quotations.id, quoteId));
   });
 });

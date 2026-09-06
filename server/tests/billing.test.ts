@@ -106,6 +106,16 @@ describe('Order & Hybrid Billing System', () => {
     expect(pays.length).toBe(1);
   });
 
+  it('SubscriptionService: should modify the billing cycle and update the renewal window', async () => {
+    const subs = await db.select().from(subscriptions).where(eq(subscriptions.orderId, orderId));
+    const sub = subs[0];
+
+    const modified = await subscriptionService.modifySubscription(sub.id, randomUUID(), 'quarterly');
+    expect(modified.interval).toBe('quarterly');
+    expect(modified.status).toBe('active');
+    expect(new Date(modified.currentPeriodEnd).getTime()).toBeGreaterThan(new Date(sub.currentPeriodEnd).getTime());
+  });
+
   it('SubscriptionService: should calculate proration correctly on cancellation', async () => {
     const subs = await db.select().from(subscriptions).where(eq(subscriptions.orderId, orderId));
     const sub = subs[0];

@@ -58,4 +58,21 @@ export const ProductsService = {
     });
     return product;
   },
+
+  deleteProduct: async (id: string, actorId: string) => {
+    const existing = await ProductsRepository.getProductById(id);
+    if (!existing) throw new NotFoundError('Product not found');
+
+    const deleted = await ProductsRepository.deleteProduct(id);
+    await AuditService.log({
+      actorId,
+      entityType: 'product',
+      entityId: id,
+      action: AuditAction.PRODUCT_UPDATED,
+      before: existing,
+      after: { id, deleted: true },
+    });
+
+    return deleted;
+  },
 };

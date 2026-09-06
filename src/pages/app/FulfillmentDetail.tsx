@@ -59,6 +59,8 @@ export default function FulfillmentDetail() {
 
   const quoteId = data.order.id.slice(-6).toUpperCase();
   const customerName = data.order.customerName || 'Unknown Customer';
+  const totalShipmentCount = (data.splits || []).reduce((sum: number, split: any) => sum + (Number(split.shipments) || 0), 0);
+  const totalSplitCost = (data.splits || []).reduce((sum: number, split: any) => sum + (Number(split.cost) || 0), 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 card-tactile bg-white p-6 sm:p-10 min-h-[calc(100vh-4rem)] relative mb-12">
@@ -96,13 +98,24 @@ export default function FulfillmentDetail() {
                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-5 font-bold">{split.warehouseName}</td>
                   <td className="px-6 py-5 font-black text-slate-900">{split.quantity} units</td>
-                  <td className="px-6 py-5 font-bold text-slate-500">{split.shipments}</td>
-                  <td className="px-6 py-5 font-black text-slate-900">${split.cost}</td>
+                  <td className="px-6 py-5 font-bold text-slate-500">{split.shipments || 1}</td>
+                  <td className="px-6 py-5 font-black text-slate-900">${Number(split.cost || 0).toLocaleString()}</td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-2xl border-2 border-slate-200 bg-slate-50 p-4">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-500">Estimated shipment count</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">{totalShipmentCount}</p>
+        </div>
+        <div className="rounded-2xl border-2 border-slate-200 bg-slate-50 p-4">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-500">Estimated cost</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">${totalSplitCost.toLocaleString()}</p>
+        </div>
       </div>
 
       {data.hasBackorder && (

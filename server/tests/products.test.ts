@@ -54,4 +54,13 @@ describe('Products API', () => {
     expect(res.statusCode).toEqual(200);
     expect(res.body.data).toHaveLength(1);
   });
+
+  it('DELETE /products/:id deletes a product', async () => {
+    (ProductsService.deleteProduct as jest.Mock).mockResolvedValue({ id: 'prod-1', deleted: true } as any);
+
+    const res = await request(app).delete('/products/prod-1');
+
+    expect(res.statusCode).toEqual(200);
+    expect(res.body.data.deleted).toBe(true);
+  });
 });
